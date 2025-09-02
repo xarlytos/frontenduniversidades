@@ -72,7 +72,7 @@ export class DatabaseUtils {
           indexSize: dbStats.indexSize
         }
       };
-    } catch (error) {
+    } catch (error: any) {
       return {
         status: 'unhealthy',
         details: {
@@ -88,6 +88,7 @@ export class DatabaseUtils {
    */
   static async getDatabaseStats(): Promise<any> {
     try {
+      const stats: any = {};
       const db = mongoose.connection.db;
       const collections = ['usuarios', 'contactos', 'universidades', 'titulaciones', 'audit_logs'];
       

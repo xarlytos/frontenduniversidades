@@ -13,7 +13,7 @@ export const handleValidationErrors = (
     res.status(400).json({
       success: false,
       message: 'Errores de validación',
-      errors: errors.array().map(error => ({
+      errors: errors.array().map((error: any) => ({
         field: error.type === 'field' ? error.path : 'unknown',
         message: error.msg
       }))

@@ -13,7 +13,7 @@ const jerarquiaUsuariosSchema = new Schema<IJerarquiaUsuarios>({
     type: Schema.Types.ObjectId,
     ref: 'Usuario',
     required: true,
-    unique: true // Un comercial solo puede tener un jefe
+    unique: true // Un subordinado solo puede tener un jefe
   },
   jefeId: {
     type: Schema.Types.ObjectId,
@@ -24,14 +24,16 @@ const jerarquiaUsuariosSchema = new Schema<IJerarquiaUsuarios>({
   timestamps: true
 });
 
-// Índices
+// Índices para optimizar consultas
 jerarquiaUsuariosSchema.index({ subordinadoId: 1 }, { unique: true });
 jerarquiaUsuariosSchema.index({ jefeId: 1 });
+jerarquiaUsuariosSchema.index({ subordinadoId: 1, jefeId: 1 });
 
-// Validación para evitar auto-referencia
+// Validación para evitar que un usuario sea jefe de sí mismo
 jerarquiaUsuariosSchema.pre('save', function(next) {
   if (this.subordinadoId.equals(this.jefeId)) {
-    return next(new Error('Un usuario no puede ser jefe de sí mismo'));
+    const error = new Error('Un usuario no puede ser jefe de sí mismo');
+    return next(error);
   }
   next();
 });

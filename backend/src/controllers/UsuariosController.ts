@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import { Usuario, EstadoUsuario, RolUsuario, IUsuario } from '../models/Usuario';
 import { UsuarioPermiso } from '../models/UsuarioPermiso';
 import { Permiso } from '../models/Permiso';
-import { JerarquiaUsuarios } from '../models/JerarquiaUsuarios';
+import { JerarquiaUsuarios } from '../models/JerarquiaUsuarios'; // RESTAURADO
 import { AuditLog, EntidadAudit, AccionAudit } from '../models/AuditLog';
 import { AuthRequest } from '../types';
 import mongoose from 'mongoose';
@@ -253,25 +253,18 @@ export class UsuariosController {
       await nuevoUsuario.save();
       console.log('✅ Usuario creado exitosamente con ID:', nuevoUsuario._id);
       
-      // Asignar permisos por defecto para usuarios comerciales
+      // Asignar permisos solo si se proporcionan explícitamente
       console.log('🔑 Procesando permisos - Rol:', rol, 'Permisos recibidos:', permisos.length);
       let permisosAAsignar = permisos;
-      
-      // COMENTADO: Ya no asignamos todos los permisos automáticamente a comerciales
-      // if (rol === 'COMERCIAL' && permisosAAsignar.length === 0) {
-      //   console.log('🔑 Usuario comercial sin permisos específicos, asignando TODOS los permisos');
-      //   // Obtener TODOS los permisos disponibles para comerciales
-      //   const todosLosPermisos = await Permiso.find({});
-      //   
-      //   permisosAAsignar = todosLosPermisos.map(p => p._id);
-      //   console.log(`🔑 Asignando TODOS los permisos a usuario comercial: ${todosLosPermisos.map(p => p.clave).join(', ')}`);
-      // }
-      
-      // Solo asignar permisos si se proporcionaron explícitamente
+
+      // ELIMINADO: Ya no se asignan permisos básicos automáticamente a comerciales
+      // Los permisos deben ser asignados explícitamente por un administrador
+
+      // Asignar permisos solo si se proporcionan
       if (permisosAAsignar.length > 0) {
         console.log('🔑 Asignando', permisosAAsignar.length, 'permisos al usuario');
         const permisosValidos = await Permiso.find({ _id: { $in: permisosAAsignar } });
-        console.log('🔑 Permisos válidos encontrados:', permisosValidos.length);
+        console.log('🔑 Permisos validos encontrados:', permisosValidos.length);
         
         const usuarioPermisos = permisosValidos.map(permiso => ({
           usuarioId: nuevoUsuario._id,
@@ -281,7 +274,7 @@ export class UsuariosController {
         await UsuarioPermiso.insertMany(usuarioPermisos);
         console.log('✅ Permisos asignados correctamente');
       } else {
-        console.log('ℹ️ No hay permisos para asignar - Usuario comercial creado sin permisos');
+        console.log('ℹ️ No hay permisos para asignar - Usuario creado sin permisos');
       }
       
       // Registrar en auditoría
@@ -700,7 +693,7 @@ export class UsuariosController {
       
       res.json({
         success: true,
-        message: `Jefe ${accion === 'crear' ? 'asignado' : 'actualizado'} exitosamente`,
+        message: 'Jefe asignado exitosamente',
         jerarquia: {
           subordinado: {
             id: subordinado._id,
@@ -1007,6 +1000,89 @@ export class UsuariosController {
     } catch (error) {
       console.error('💥 Error al actualizar permisos:', error);
       console.error('📊 Stack trace:', error instanceof Error ? error.stack : 'No stack available');
+      res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor'
+      });
+    }
+  }
+
+  // Función para asignar permisos básicos a comerciales existentes
+  static async asignarPermisosBasicosAComerciales(req: AuthRequest, res: Response) {
+    try {
+      console.log('🔧 Iniciando asignación de permisos básicos a comerciales existentes');
+      
+      // Obtener todos los usuarios comerciales
+      const comerciales = await Usuario.find({ rol: 'COMERCIAL' });
+      console.log(`👥 Encontrados ${comerciales.length} usuarios comerciales`);
+
+      // Obtener permisos básicos
+      const permisosBasicos = await Permiso.find({
+        clave: {
+          $in: [
+            'VER_CONTACTOS',
+            'CREAR_CONTACTOS', 
+            'EDITAR_CONTACTOS',
+            'IMPORTAR_CONTACTOS',
+            'EXPORTAR_CONTACTOS'
+          ]
+        }
+      });
+      
+      console.log(`🔑 Encontrados ${permisosBasicos.length} permisos básicos`);
+
+      let asignados = 0;
+      let yaExistentes = 0;
+
+      for (const comercial of comerciales) {
+        console.log(`👤 Procesando usuario: ${comercial.nombre}`);
+        
+        for (const permiso of permisosBasicos) {
+          // Verificar si ya tiene el permiso
+          const existePermiso = await UsuarioPermiso.findOne({
+            usuarioId: comercial._id,
+            permisoId: permiso._id
+          });
+
+          if (!existePermiso) {
+            // Asignar el permiso
+            await UsuarioPermiso.create({
+              usuarioId: comercial._id,
+              permisoId: permiso._id
+            });
+            console.log(`  ✅ Asignado: ${permiso.clave}`);
+            asignados++;
+          } else {
+            yaExistentes++;
+          }
+        }
+      }
+
+      // Registrar en auditoría
+      await AuditLog.create({
+        usuarioId: req.user?.userId,
+        entidad: EntidadAudit.USUARIO,
+        entidadId: '',
+        accion: AccionAudit.UPDATE,
+        despues: {
+          detalles: `Asignación masiva de permisos básicos a comerciales: ${asignados} permisos asignados`
+        },
+        ip: req.ip,
+        userAgent: req.get('User-Agent')
+      });
+
+      res.json({
+        success: true,
+        message: 'Permisos básicos asignados correctamente',
+        data: {
+          comerciales: comerciales.length,
+          permisosAsignados: asignados,
+          permisosYaExistentes: yaExistentes
+        }
+      });
+      
+    } catch (error) {
+      console.error('❌ Error asignando permisos básicos:', error);
       res.status(500).json({
         success: false,
         message: 'Error interno del servidor'

@@ -6,4 +6,4 @@ export {
   checkContactAccess 
 } from './authorization';
 export { handleValidationErrors, validate } from './validation';
-export { loginLimiter, apiLimiter, importLimiter } from './rateLimiting';
+export { rateLimitMiddleware, authRateLimit, createRateLimit } from './rateLimiting';

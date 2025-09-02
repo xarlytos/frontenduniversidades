@@ -4,7 +4,7 @@ import { Universidad } from '../models/Universidad';
 import { Titulacion } from '../models/Titulacion';
 import { Contacto } from '../models/Contacto';
 import { Usuario } from '../models/Usuario';
-import { JerarquiaUsuarios } from '../models/JerarquiaUsuarios';
+import { JerarquiaUsuarios } from '../models/JerarquiaUsuarios'; // RESTAURADO
 import { AuditLog, EntidadAudit, AccionAudit } from '../models/AuditLog';
 import { AuthRequest, RolUsuario } from '../types'; // Fixed: Import both from '../types'
 
@@ -358,6 +358,8 @@ export class UniversidadesController {
 
   // Obtener universidades con titulaciones y estadísticas de alumnos por curso
   // Método auxiliar para obtener subordinados recursivamente
+  // COMENTADO: Función que usaba JerarquiaUsuarios (modelo eliminado)
+  /*
   static async getSubordinados(jefeId: string): Promise<string[]> {
     const subordinadosDirectos = await JerarquiaUsuarios.find({ jefeId }).select('subordinadoId');
     let todosLosSubordinados = subordinadosDirectos.map(s => s.subordinadoId.toString());
@@ -370,6 +372,7 @@ export class UniversidadesController {
     
     return [...new Set(todosLosSubordinados)];
   }
+  */
 
   static async obtenerUniversidadesConEstadisticas(req: AuthRequest, res: Response) {
     try {
@@ -390,6 +393,7 @@ export class UniversidadesController {
         comercialesVisibles = todosLosUsuarios.map(u => u._id.toString());
         console.log(`👥 ADMIN - Comerciales visibles (todos):`, comercialesVisibles.length);
       } else {
+         // COMENTADO: Funcionalidad de jerarquía temporalmente deshabilitada
          // Para comerciales, obtener subordinados del usuario actual
          if (!userId) {
            return res.status(401).json({
@@ -397,8 +401,9 @@ export class UniversidadesController {
              message: 'Usuario no autenticado'
            });
          }
-         const subordinados = await UniversidadesController.getSubordinados(userId);
-         comercialesVisibles = [userId, ...subordinados];
+         // const subordinados = await UniversidadesController.getSubordinados(userId);
+         // comercialesVisibles = [userId, ...subordinados];
+         comercialesVisibles = [userId]; // Solo el usuario actual por ahora
          console.log(`👥 Comerciales visibles para ${userId}:`, comercialesVisibles);
        }
       
@@ -512,6 +517,7 @@ if (totalContactosTitulacion === 0) {
   };
 }
 
+/*
 // Create hierarchy cache once at the beginning
 const jerarquiaCache = new Map<string, string>();
 const todasLasJerarquias = await JerarquiaUsuarios.find({
@@ -539,7 +545,7 @@ console.log('🗺️ Jerarquía cache creado:', jerarquiaCache.size, 'relaciones
                     console.log(`🔍 Jefe encontrado para ${comercialId}: ${jefeIdStr}`);
                     if (comercialesVisibles.includes(jefeIdStr)) {
                       jerarquiaMap.set(comercialId, jefeIdStr);
-                      console.log(`✅ Agregado al mapa: ${comercialId} -> ${jefeIdStr}`);
+                      console.log(`✅ Jerarquía agregada: ${comercialId} -> ${jefeIdStr}`);
                     } else {
                       console.log(`❌ Jefe ${jefeIdStr} no está en comerciales visibles`);
                     }
@@ -650,9 +656,10 @@ console.log('🗺️ Jerarquía cache creado:', jerarquiaCache.size, 'relaciones
                 console.log('🎓 Alumnos finales después de reasignación:', alumnosFinales.length);
                 return alumnosFinales;
               };
-              
+*/
+
               // NUEVO: Crear estructura completa de cursos (1-6) incluso si están vacíos
-              const cursosCompletos = [];
+              const cursosCompletos: any[] = [];
               for (let cursoNum = 1; cursoNum <= 6; cursoNum++) {
                 const cursoData = contactosPorCurso.find(c => c._id === cursoNum);
                 
@@ -670,29 +677,31 @@ console.log('🗺️ Jerarquía cache creado:', jerarquiaCache.size, 'relaciones
                   });
                 }
                 
-                // Aplicar agregación jerárquica también a nivel de curso
-                const { estadisticasFinales: estadisticasCursoFinales, comercialesInfoFinales: comercialesInfoCursoFinales } = 
-                  agregarEstadisticasJerarquicas(estadisticasPorComercial, comercialesInfo);
+                // Aplicar agregación jerárquica
+                // Simplified: Direct assignment instead of hierarchical processing
+                const estadisticasFinales = estadisticasPorComercial;
+                const comercialesInfoFinales = comercialesInfo;
                 
-                // Filtrar comerciales a mostrar en este curso
+                // Filtrar comerciales a mostrar (solo los que no son subordinados de otros en la lista visible, o el usuario actual)
                 const comercialesCursoAMostrar: { [key: string]: number } = {};
                 const comercialesInfoCursoAMostrar: { [key: string]: string } = {};
                 
-                Object.keys(estadisticasCursoFinales).forEach(comercialId => {
-                  const esSubordinado = jerarquiaMap.has(comercialId) && jerarquiaMap.get(comercialId) !== comercialId;
+                Object.keys(estadisticasFinales).forEach(comercialId => {
+                  const esSubordinado = false; // Simplified: no hierarchy system
                   // Para administradores, mostrar todos los comerciales (incluyendo jefes con estadísticas agregadas)
                   // Para comerciales, solo mostrar los que no son subordinados o el usuario actual
                   if (userRole === 'ADMIN' || !esSubordinado || comercialId === userId) {
-                    comercialesCursoAMostrar[comercialId] = estadisticasCursoFinales[comercialId];
-                    if (comercialesInfoCursoFinales[comercialId]) {
-                      comercialesInfoCursoAMostrar[comercialId] = comercialesInfoCursoFinales[comercialId];
+                    comercialesCursoAMostrar[comercialId] = estadisticasFinales[comercialId];
+                    if (comercialesInfoFinales[comercialId]) {
+                      comercialesInfoCursoAMostrar[comercialId] = comercialesInfoFinales[comercialId];
                     }
                   }
                 });
                 
                 // Aplicar agregación jerárquica a los alumnos
-                const alumnosOriginales = cursoData ? cursoData.alumnos : [];
-                const alumnosConJerarquia = agregarAlumnosJerarquicos(alumnosOriginales);
+                // Simplified: No hierarchy processing
+                const alumnos = cursoData ? cursoData.alumnos || [] : [];
+                const alumnosConJerarquia = alumnos;
                 
                 cursosCompletos.push({
                   curso: cursoNum,
@@ -703,20 +712,13 @@ console.log('🗺️ Jerarquía cache creado:', jerarquiaCache.size, 'relaciones
                 });
               }
               
-              // Calcular total de alumnos en la titulación
-              const totalAlumnosTitulacion = cursosCompletos.reduce(
-                (sum, curso) => sum + curso.totalAlumnos, 0
-              );
-              
               // Calcular estadísticas generales por comercial para toda la titulación
               const estadisticasGeneralesPorComercial: { [key: string]: number } = {};
               const comercialesInfoGeneral: { [key: string]: string } = {};
               
               cursosCompletos.forEach(curso => {
                 Object.keys(curso.estadisticasPorComercial).forEach(comercialId => {
-                  estadisticasGeneralesPorComercial[comercialId] = 
-                    (estadisticasGeneralesPorComercial[comercialId] || 0) + curso.estadisticasPorComercial[comercialId];
-                  
+                  estadisticasGeneralesPorComercial[comercialId] = (estadisticasGeneralesPorComercial[comercialId] || 0) + curso.estadisticasPorComercial[comercialId];
                   if (curso.comercialesInfo[comercialId]) {
                     comercialesInfoGeneral[comercialId] = curso.comercialesInfo[comercialId];
                   }
@@ -724,14 +726,16 @@ console.log('🗺️ Jerarquía cache creado:', jerarquiaCache.size, 'relaciones
               });
               
               // Aplicar agregación jerárquica
-              const { estadisticasFinales, comercialesInfoFinales } = agregarEstadisticasJerarquicas(estadisticasGeneralesPorComercial, comercialesInfoGeneral);
+              // Simplified: Direct assignment instead of hierarchical processing
+              const estadisticasFinales = estadisticasGeneralesPorComercial;
+              const comercialesInfoFinales = comercialesInfoGeneral;
               
               // Filtrar comerciales a mostrar (solo los que no son subordinados de otros en la lista visible, o el usuario actual)
               const comercialesAMostrar: { [key: string]: number } = {};
               const comercialesInfoAMostrar: { [key: string]: string } = {};
               
               Object.keys(estadisticasFinales).forEach(comercialId => {
-                const esSubordinado = jerarquiaMap.has(comercialId) && jerarquiaMap.get(comercialId) !== comercialId;
+                const esSubordinado = false; // Simplified: no hierarchy system
                 // Para administradores, mostrar todos los comerciales (incluyendo jefes con estadísticas agregadas)
                 // Para comerciales, solo mostrar los que no son subordinados o el usuario actual
                 if (userRole === 'ADMIN' || !esSubordinado || comercialId === userId) {
@@ -742,6 +746,11 @@ console.log('🗺️ Jerarquía cache creado:', jerarquiaCache.size, 'relaciones
                 }
               });
               
+              // Calcular total de alumnos en la titulación
+              const totalAlumnosTitulacion = cursosCompletos.reduce(
+                (sum, curso) => sum + curso.totalAlumnos, 0
+              );
+              
               return {
                 ...titulacion.toObject(),
                 totalAlumnos: totalAlumnosTitulacion,
@@ -749,51 +758,51 @@ console.log('🗺️ Jerarquía cache creado:', jerarquiaCache.size, 'relaciones
                 estadisticasPorComercial: comercialesAMostrar,
                 comercialesInfo: comercialesInfoAMostrar
               };
-            })
-          );
-          
-          // Calcular total de alumnos en la universidad
-          const totalAlumnosUniversidad = titulacionesConEstadisticas.reduce(
-            (sum, tit) => sum + tit.totalAlumnos, 0
-          );
-          
-          console.log(`📈 Total alumnos for ${universidad.nombre}: ${totalAlumnosUniversidad}`);
-          
-          return {
-            ...universidad.toObject(),
-            totalAlumnos: totalAlumnosUniversidad,
-            totalTitulaciones: titulacionesConEstadisticas.length,
-            titulaciones: titulacionesConEstadisticas
-          };
-        })
-      );
-      
-      // Calcular estadísticas generales
-      const estadisticasGenerales = {
-        totalUniversidades: universidadesConEstadisticas.length,
-        totalTitulaciones: universidadesConEstadisticas.reduce(
-          (sum, uni) => sum + uni.totalTitulaciones, 0
-        ),
-        totalAlumnos: universidadesConEstadisticas.reduce(
-          (sum, uni) => sum + uni.totalAlumnos, 0
-        )
-      };
-      
-      console.log('📊 Estadísticas generales:', estadisticasGenerales);
-      
-      res.json({
-        success: true,
-        estadisticasGenerales,
-        universidades: universidadesConEstadisticas
-      });
-      
-    } catch (error: any) {
-      console.error('❌ Error al obtener universidades con estadísticas:', error);
-      console.error('❌ Error stack:', error.stack);
-      res.status(500).json({ 
-        success: false,
-        error: 'Error interno del servidor' 
-      });
+              })
+            );
+            
+            // Calcular total de alumnos en la universidad
+            const totalAlumnosUniversidad = titulacionesConEstadisticas.reduce(
+              (sum, tit) => sum + tit.totalAlumnos, 0
+            );
+            
+            console.log(`📈 Total alumnos for ${universidad.nombre}: ${totalAlumnosUniversidad}`);
+            
+            return {
+              ...universidad.toObject(),
+              totalAlumnos: totalAlumnosUniversidad,
+              totalTitulaciones: titulacionesConEstadisticas.length,
+              titulaciones: titulacionesConEstadisticas
+            };
+          })
+        );
+        
+        // Calcular estadísticas generales
+        const estadisticasGenerales = {
+          totalUniversidades: universidadesConEstadisticas.length,
+          totalTitulaciones: universidadesConEstadisticas.reduce(
+            (sum, uni) => sum + uni.totalTitulaciones, 0
+          ),
+          totalAlumnos: universidadesConEstadisticas.reduce(
+            (sum, uni) => sum + uni.totalAlumnos, 0
+          )
+        };
+        
+        console.log('📊 Estadísticas generales:', estadisticasGenerales);
+        
+        res.json({
+          success: true,
+          estadisticasGenerales,
+          universidades: universidadesConEstadisticas
+        });
+        
+      } catch (error: any) {
+        console.error('❌ Error al obtener universidades con estadísticas:', error);
+        console.error('❌ Error stack:', error.stack);
+        res.status(500).json({ 
+          success: false,
+          error: 'Error interno del servidor' 
+        });
+      }
     }
-  }
 }
