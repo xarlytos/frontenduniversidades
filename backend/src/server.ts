@@ -16,8 +16,16 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Configuración de CORS
+const corsOptions = {
+  origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['https://contactosuniversidades-production-f998.up.railway.app'],
+  credentials: process.env.CORS_CREDENTIALS === 'true',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+
 // Middleware
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
