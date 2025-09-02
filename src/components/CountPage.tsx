@@ -418,11 +418,11 @@ export default function CountPage({ onNavigateToContacts }: CountPageProps) {
                     return (
                       <div key={rama} className={ramaIndex > 0 ? 'border-t border-gray-300' : ''}>
                         {/* Header de la rama */}
-                        <div className="bg-gradient-to-r from-gray-100 to-gray-200 px-6 py-3 border-b border-gray-200">
-                          <h4 className="font-semibold text-gray-800 text-sm uppercase tracking-wide">
+                        <div className="bg-gradient-to-r from-blue-50 to-blue-100 px-6 py-3 border-b border-blue-200">
+                          <h4 className="font-semibold text-blue-800 text-sm uppercase tracking-wide">
                             {rama}
                           </h4>
-                          <p className="text-xs text-gray-600 mt-1">
+                          <p className="text-xs text-blue-600 mt-1">
                             {titulacionesRama.length} titulaciones
                           </p>
                         </div>
