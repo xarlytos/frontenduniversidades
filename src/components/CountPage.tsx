@@ -364,6 +364,12 @@ export default function CountPage({ onNavigateToContacts }: CountPageProps) {
             
             // Obtener el código de la universidad para buscar en schoolsMapping
             const universidadCodigo = Object.keys(schoolsMapping).find(codigo => {
+              // Si el nombre de la universidad ya es una abreviación, usarla directamente
+              if (Object.keys(schoolsMapping).includes(universidad)) {
+                return codigo === universidad;
+              }
+              
+              // Si no, buscar por nombre completo (para compatibilidad)
               const nombreCompleto = {
                 'UV': 'Universidad de Valencia',
                 'UPV': 'Universidad Politécnica de Valencia', 
@@ -376,7 +382,7 @@ export default function CountPage({ onNavigateToContacts }: CountPageProps) {
                 'EASD': 'Escuela de Arte y Superior de Diseño'
               }[codigo];
               return nombreCompleto === universidad;
-            });
+            }) || universidad; // Si no encuentra coincidencia, usar el nombre tal como viene
             
             // Agrupar titulaciones por rama/escuela
             const titulacionesPorRama: Record<string, any[]> = {};

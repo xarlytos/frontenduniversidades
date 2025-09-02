@@ -185,13 +185,13 @@ export default function ContactosCompleta() {
                   )}
                 </div>
                 
-                {contact.aportado_por && (
-                  <div className="mt-4 pt-4 border-t border-gray-100">
-                    <p className="text-xs text-gray-500">
-                      Comercial: {contact.aportado_por}
-                    </p>
-                  </div>
-                )}
+                {(contact.comercial_nombre || contact.comercial) && (
+  <div className="mt-4 pt-4 border-t border-gray-100">
+    <p className="text-xs text-gray-500">
+      Comercial: {contact.comercial_nombre || contact.comercial}
+    </p>
+  </div>
+)}
               </div>
             ))}
           </div>
