@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { BarChart3, Users, Filter, ArrowRight } from 'lucide-react';
 import { Contact, UniversityStats, TitulationStats } from '../types';
 import universidadesService, { UniversidadConEstadisticas } from '../services/universidadesService';
+import { schoolsMapping, schoolOrder, getSchoolForTitulation } from '../data/schoolsData';
 
 interface CountPageProps {
   onNavigateToContacts: (filters: any) => void;
@@ -361,115 +362,171 @@ export default function CountPage({ onNavigateToContacts }: CountPageProps) {
             // Crear ID único para la universidad
             const universidadId = universidad.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
             
+            // Obtener el código de la universidad para buscar en schoolsMapping
+            const universidadCodigo = Object.keys(schoolsMapping).find(codigo => {
+              const nombreCompleto = {
+                'UV': 'Universidad de Valencia',
+                'UPV': 'Universidad Politécnica de Valencia', 
+                'CEU': 'Universidad CEU Cardenal Herrera',
+                'UCV': 'Universidad Católica de Valencia',
+                'EDEM': 'EDEM Escuela de Empresarios',
+                'ESIC': 'ESIC Business & Marketing School',
+                'FLORIDA': 'Florida Universitaria',
+                'UEV': 'Universidad Europea des Valencia',
+                'EASD': 'Escuela de Arte y Superior de Diseño'
+              }[codigo];
+              return nombreCompleto === universidad;
+            });
+            
+            // Agrupar titulaciones por rama/escuela
+            const titulacionesPorRama: Record<string, any[]> = {};
+            
+            titulacionesUniversidad.forEach(titulacion => {
+              const rama = getSchoolForTitulation(universidadCodigo || '', titulacion.nombre) || 'Sin clasificar';
+              if (!titulacionesPorRama[rama]) {
+                titulacionesPorRama[rama] = [];
+              }
+              titulacionesPorRama[rama].push(titulacion);
+            });
+            
+            // Obtener el orden de las ramas para esta universidad
+            const ordenRamas = universidadCodigo ? (schoolOrder[universidadCodigo as keyof typeof schoolOrder] || []) : [];
+            const ramasOrdenadas = ordenRamas.filter(rama => titulacionesPorRama[rama]);
+            
+            // Agregar ramas que no están en el orden definido
+            Object.keys(titulacionesPorRama).forEach(rama => {
+              if (!ramasOrdenadas.includes(rama)) {
+                ramasOrdenadas.push(rama);
+              }
+            });
+            
             return (
               <div key={universidad} id={`universidad-${universidadId}`} className="mb-8 scroll-mt-6">
                 {/* Header de Universidad */}
                 <div className="bg-gradient-to-r from-blue-700 to-blue-800 rounded-t-lg px-6 py-4">
                   <h3 className="text-lg font-bold text-white">{universidad}</h3>
                   <p className="text-blue-100 text-sm">
-                    {titulacionesUniversidad.length} titulaciones disponibles
+                    {titulacionesUniversidad.length} titulaciones disponibles en {ramasOrdenadas.length} ramas
                   </p>
                 </div>
                 
-                {/* Tabla de titulaciones para esta universidad */}
+                {/* Contenido agrupado por ramas */}
                 <div className="bg-white rounded-b-lg shadow-sm border border-gray-200 overflow-hidden">
-                  {/* Header de la tabla */}
-                  <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-3 border-b border-gray-200">
-                    <div className="grid grid-cols-12 gap-4 text-gray-700 text-sm font-medium">
-                      <div className="col-span-3">TITULACIÓN</div>
-                      <div className="col-span-1 text-center">TOTAL</div>
-                      <div className="col-span-1 text-center">1º</div>
-                      <div className="col-span-1 text-center">2º</div>
-                      <div className="col-span-1 text-center">3º</div>
-                      <div className="col-span-1 text-center">4º</div>
-                      <div className="col-span-1 text-center">5º</div>
-                      <div className="col-span-1 text-center">6º</div>
-                      <div className="col-span-1">COMERCIALES</div>
-                      <div className="col-span-1 text-center">CONTACTOS</div>
-                    </div>
-                  </div>
-                  
-                  {/* Filas de titulaciones */}
-                  <div className="divide-y divide-gray-200">
-                    {titulacionesUniversidad.map((titulacion, index) => {
-                      const totalAlumnosTitulacion = titulacion.totalAlumnos || 0;
-                      
-                      // Calcular alumnos por curso
-                      const alumnosPorCurso: Record<number, number> = {};
-                      titulacion.cursos?.forEach(curso => {
-                        alumnosPorCurso[parseInt(curso.curso)] = curso.totalAlumnos || 0;
-                      });
-                      
-                      // Calcular comerciales por titulación
-                      const comercialesPorTitulacion: Record<string, number> = {};
-                      titulacion.cursos?.forEach(curso => {
-                        if (curso.alumnos && Array.isArray(curso.alumnos)) {
-                          curso.alumnos.forEach(alumno => {
-                            const nombreComercial = alumno.comercialNombre || 'Sin asignar';
-                            comercialesPorTitulacion[nombreComercial] = (comercialesPorTitulacion[nombreComercial] || 0) + 1;
-                          });
-                        }
-                      });
-                      
-                      return (
-                        <div key={`${universidad}-${titulacion.nombre}`} className="px-6 py-4 hover:bg-gray-50">
-                          <div className="grid grid-cols-12 gap-4 items-center">
-                            {/* Nombre de la titulación (sin mostrar universidad ya que está en el header) */}
-                            <div className="col-span-3">
-                              <span className="font-medium text-gray-900">{titulacion.nombre}</span>
-                            </div>
-                            
-                            {/* Total */}
-                            <div className="col-span-1 text-center">
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                                {totalAlumnosTitulacion}
-                              </span>
-                            </div>
-                            
-                            {/* Cursos 1º a 6º */}
-                            {[1, 2, 3, 4, 5, 6].map(curso => (
-                              <div key={curso} className="col-span-1 text-center">
-                                {alumnosPorCurso[curso] ? (
-                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                    {alumnosPorCurso[curso]}
-                                  </span>
-                                ) : (
-                                  <span className="text-gray-300">0</span>
-                                )}
-                              </div>
-                            ))}
-                            
-                            {/* Comerciales */}
-                            <div className="col-span-1">
-                              <div className="flex flex-wrap gap-1">
-                                {Object.entries(comercialesPorTitulacion).length > 0 ? (
-                                  Object.entries(comercialesPorTitulacion)
-                                    .sort(([,a], [,b]) => b - a)
-                                    .map(([nombre, cantidad]) => (
-                                      <span key={nombre} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                                        {nombre}: {cantidad}
-                                      </span>
-                                    ))
-                                ) : (
-                                  <span className="text-gray-400 text-xs">Sin comerciales</span>
-                                )}
-                              </div>
-                            </div>
-                            
-                            {/* Nueva columna de Contactos */}
-                            <div className="col-span-1 text-center">
-                              <button
-                                onClick={() => handleTitulationClick(universidad, titulacion.nombre)}
-                                className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                              >
-                                Ver contactos
-                              </button>
-                            </div>
+                  {ramasOrdenadas.map((rama, ramaIndex) => {
+                    const titulacionesRama = titulacionesPorRama[rama] || [];
+                    
+                    return (
+                      <div key={rama} className={ramaIndex > 0 ? 'border-t border-gray-300' : ''}>
+                        {/* Header de la rama */}
+                        <div className="bg-gradient-to-r from-gray-100 to-gray-200 px-6 py-3 border-b border-gray-200">
+                          <h4 className="font-semibold text-gray-800 text-sm uppercase tracking-wide">
+                            {rama}
+                          </h4>
+                          <p className="text-xs text-gray-600 mt-1">
+                            {titulacionesRama.length} titulaciones
+                          </p>
+                        </div>
+                        
+                        {/* Header de la tabla */}
+                        <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-2 border-b border-gray-200">
+                          <div className="grid grid-cols-12 gap-4 text-gray-700 text-sm font-medium">
+                            <div className="col-span-3">TITULACIÓN</div>
+                            <div className="col-span-1 text-center">TOTAL</div>
+                            <div className="col-span-1 text-center">1º</div>
+                            <div className="col-span-1 text-center">2º</div>
+                            <div className="col-span-1 text-center">3º</div>
+                            <div className="col-span-1 text-center">4º</div>
+                            <div className="col-span-1 text-center">5º</div>
+                            <div className="col-span-1 text-center">6º</div>
+                            <div className="col-span-1">COMERCIALES</div>
+                            <div className="col-span-1 text-center">CONTACTOS</div>
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
+                        
+                        {/* Filas de titulaciones de esta rama */}
+                        <div className="divide-y divide-gray-100">
+                          {titulacionesRama.map((titulacion, index) => {
+                            const totalAlumnosTitulacion = titulacion.totalAlumnos || 0;
+                            
+                            // Calcular alumnos por curso
+                            const alumnosPorCurso: Record<number, number> = {};
+                            titulacion.cursos?.forEach(curso => {
+                              alumnosPorCurso[parseInt(curso.curso)] = curso.totalAlumnos || 0;
+                            });
+                            
+                            // Calcular comerciales por titulación
+                            const comercialesPorTitulacion: Record<string, number> = {};
+                            titulacion.cursos?.forEach(curso => {
+                              if (curso.alumnos && Array.isArray(curso.alumnos)) {
+                                curso.alumnos.forEach(alumno => {
+                                  const nombreComercial = alumno.comercialNombre || 'Sin asignar';
+                                  comercialesPorTitulacion[nombreComercial] = (comercialesPorTitulacion[nombreComercial] || 0) + 1;
+                                });
+                              }
+                            });
+                            
+                            return (
+                              <div key={`${universidad}-${rama}-${titulacion.nombre}`} className="px-6 py-3 hover:bg-gray-50">
+                                <div className="grid grid-cols-12 gap-4 items-center">
+                                  {/* Nombre de la titulación */}
+                                  <div className="col-span-3">
+                                    <span className="font-medium text-gray-900 text-sm">{titulacion.nombre}</span>
+                                  </div>
+                                  
+                                  {/* Total */}
+                                  <div className="col-span-1 text-center">
+                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                                      {totalAlumnosTitulacion}
+                                    </span>
+                                  </div>
+                                  
+                                  {/* Cursos 1º a 6º */}
+                                  {[1, 2, 3, 4, 5, 6].map(curso => (
+                                    <div key={curso} className="col-span-1 text-center">
+                                      {alumnosPorCurso[curso] ? (
+                                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                          {alumnosPorCurso[curso]}
+                                        </span>
+                                      ) : (
+                                        <span className="text-gray-300">0</span>
+                                      )}
+                                    </div>
+                                  ))}
+                                  
+                                  {/* Comerciales */}
+                                  <div className="col-span-1">
+                                    <div className="flex flex-wrap gap-1">
+                                      {Object.entries(comercialesPorTitulacion).length > 0 ? (
+                                        Object.entries(comercialesPorTitulacion)
+                                          .sort(([,a], [,b]) => b - a)
+                                          .map(([nombre, cantidad]) => (
+                                            <span key={nombre} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                              {nombre}: {cantidad}
+                                            </span>
+                                          ))
+                                      ) : (
+                                        <span className="text-gray-400 text-xs">Sin comerciales</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Nueva columna de Contactos */}
+                                  <div className="col-span-1 text-center">
+                                    <button
+                                      onClick={() => handleTitulationClick(universidad, titulacion.nombre)}
+                                      className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                                    >
+                                      Ver contactos
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             );
