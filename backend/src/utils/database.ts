@@ -88,11 +88,10 @@ export class DatabaseUtils {
    */
   static async getDatabaseStats(): Promise<any> {
     try {
-      const stats: any = {};
       const db = mongoose.connection.db;
       const collections = ['usuarios', 'contactos', 'universidades', 'titulaciones', 'audit_logs'];
       
-      const stats = {};
+      const stats: any = {};
       
       for (const collection of collections) {
         const count = await db.collection(collection).countDocuments();

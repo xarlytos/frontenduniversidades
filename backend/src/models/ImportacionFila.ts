@@ -36,7 +36,7 @@ const importacionFilaSchema = new Schema<IImportacionFila>({
     default: EstadoFila.OK
   },
   errores: {
-    type: [Schema.Types.Mixed],
+    type: Schema.Types.Mixed,
     default: []
   }
 }, {

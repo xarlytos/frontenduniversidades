@@ -51,7 +51,7 @@ const importacionSchema = new Schema<IImportacion>({
     default: 0
   },
   errores: {
-    type: [Schema.Types.Mixed],
+    type: Schema.Types.Mixed,
     default: []
   },
   startedAt: {
