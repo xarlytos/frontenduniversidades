@@ -18,7 +18,7 @@ const PORT = process.env.PORT || 3001;
 
 // Configuración de CORS
 const corsOptions = {
-  origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['https://contactosuniversidades-production-f998.up.railway.app'],
+  origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['https://frontenduniversidades.vercel.app'],
   credentials: process.env.CORS_CREDENTIALS === 'true',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -49,20 +49,16 @@ app.get('/health', (req, res) => {
 
 // Rutas públicas
 app.use('/api/auth', authRoutes);
-
-// Ruta de usuarios (incluye ruta pública para crear admin)
-console.log('🔧 Configurando ruta de usuarios');
 app.use('/api/usuarios', usuariosRoutes);
 
-// Middleware de autenticación para rutas protegidas
-console.log('🔒 Aplicando middleware de autenticación');
-app.use('/api', authenticateToken);
+// Rutas protegidas (aplicar middleware individualmente)
+app.use('/api/contactos', authenticateToken, contactosRoutes);
+app.use('/api/estadisticas', authenticateToken, estadisticasRoutes);
+app.use('/api/universidades', authenticateToken, universidadesRoutes);
+app.use('/api/titulaciones', authenticateToken, titulacionesRoutes);
 
-// Rutas protegidas
-app.use('/api/contactos', contactosRoutes);
-app.use('/api/estadisticas', estadisticasRoutes);
-app.use('/api/universidades', universidadesRoutes);
-app.use('/api/titulaciones', titulacionesRoutes);
+// COMENTAR O ELIMINAR esta línea problemática:
+// app.use('/api', authenticateToken);
 
 // Middleware de manejo de errores
 app.use(errorHandler);
