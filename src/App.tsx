@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Menu } from 'lucide-react';
 import { useAuth } from './hooks/useAuth';
 import LoginPage from './components/LoginPage';
 import Sidebar from './components/Sidebar';
@@ -31,6 +32,16 @@ function App() {
   const { hasPermissionWithHierarchy } = usePermissions();
   const [currentPage, setCurrentPage] = useState<'contactos' | 'conteo' | 'usuarios' | 'admin' | 'contactoscompleta'>('contactos');
   const [contactsFilters, setContactsFilters] = useState<Partial<ContactFilters>>({});
+  const [isSidebarVisible, setIsSidebarVisible] = useState(() => {
+    const saved = localStorage.getItem('sidebarVisible');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+  
+  const toggleSidebar = () => {
+    const newState = !isSidebarVisible;
+    setIsSidebarVisible(newState);
+    localStorage.setItem('sidebarVisible', JSON.stringify(newState));
+  };
   
   // Pasar isAuthenticated && !isLoading para asegurar que la auth esté completa
   const { contacts, addContact, updateContact, deleteContact, deleteMultipleContacts, refreshContacts } = useContacts(isAuthenticated && !isLoading);
@@ -82,14 +93,23 @@ function App() {
 
   return (
     <div className="flex h-screen bg-gray-50">
-      <Sidebar 
-        currentPage={currentPage} 
-        onPageChange={setCurrentPage}
-        user={user}
-        onLogout={logout}
-      />
+      {isSidebarVisible && (
+        <Sidebar 
+          currentPage={currentPage} 
+          onPageChange={setCurrentPage}
+          user={user}
+          onLogout={logout}
+        />
+      )}
       
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto relative">
+        <button
+          onClick={toggleSidebar}
+          className="fixed top-4 left-4 z-50 p-2 bg-white border border-gray-300 rounded-lg shadow-md hover:bg-gray-50 transition-colors"
+          title={isSidebarVisible ? 'Ocultar sidebar' : 'Mostrar sidebar'}
+        >
+          <Menu className="w-5 h-5" />
+        </button>
         {currentPage === 'contactos' && (
           <ContactsPage
             contacts={filteredContacts}
