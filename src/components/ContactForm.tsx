@@ -1,477 +1,285 @@
-import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
-import { Contact } from '../types';
-import { getUniversities } from '../data/universitiesData';
-import { useContacts } from '../hooks/useContacts';
-import { useAuth } from '../hooks/useAuth';
-import universidadesService, { Universidad } from '../services/universidadesService';
+import { useState, useCallback, useEffect } from 'react';
+import { Contact, ContactFilters } from '../types';
+import { contactsService } from '../services/contactsService';
 
-interface ContactFormProps {
-  contact?: Contact | null;
-  onSubmit: (contact: Omit<Contact, 'id' | 'fecha_alta'>) => void;
-  onCancel: () => void;
-}
+// Agregar parámetro para controlar cuándo cargar
+export const useContacts = (shouldLoad: boolean = true) => {
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-export default function ContactForm({ contact, onSubmit, onCancel }: ContactFormProps) {
-  const { checkDuplicates } = useContacts();
-  const { users, getAllUsers, user } = useAuth();
-  
-  const [formData, setFormData] = useState({
-    universidad: '',
-    universidadId: '',
-    titulacion: '',
-    titulacionId: '',
-    nombre: '',
-    curso: null as number | null,
-    telefono: '',
-    instagram: '',
-    año_nacimiento: null as number | null,
-    comercial: ''
-  });
-
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [availableTitulaciones, setAvailableTitulaciones] = useState<string[]>([]);
-  const [universities, setUniversities] = useState<Universidad[]>([]);
-  const [loadingUniversities, setLoadingUniversities] = useState(true);
-
-  // Cargar universidades desde la API
-  useEffect(() => {
-    const loadUniversities = async () => {
-      try {
-        console.log('Cargando universidades desde la API...');
-        const universitiesData = await universidadesService.getUniversidades();
-        console.log('Datos de universidades recibidos:', universitiesData);
-        console.log('Número de universidades:', universitiesData.length);
-        setUniversities(universitiesData);
-      } catch (error) {
-        console.error('Error al cargar universidades:', error);
-      } finally {
-        setLoadingUniversities(false);
+  // Cargar contactos desde la API usando getContacts (con filtros y paginación)
+  const loadContacts = useCallback(async (filters?: ContactFilters & { page?: number; limit?: number }) => {
+    try {
+      setLoading(true);
+      setError(null);
+      console.log('🔄 Loading contacts with filters:', filters);
+      const response = await contactsService.getContacts(filters);
+      
+      if (response.success && response.data) {
+        // Los contactos pueden estar en response.data directamente o en response.data.data
+        const contactsData = Array.isArray(response.data) ? response.data : response.data.data;
+        console.log('🔍 Raw API response data:', contactsData);
+        console.log('📊 Total contacts received:', contactsData?.length || 0);
+        
+        if (contactsData && Array.isArray(contactsData)) {
+          console.log('🔍 Processing contacts, initial count:', contactsData.length);
+          
+          // Verificar qué contactos se están filtrando
+          const filteredOutContacts = contactsData.filter((contact: any) => {
+            const hasId = contact._id !== undefined && contact._id !== null;
+            const hasName = contact.nombreCompleto !== undefined && contact.nombreCompleto !== null && contact.nombreCompleto.toString().trim() !== '';
+            const passes = hasId && hasName;
+            if (!passes) {
+              console.log('⚠️ Contact filtered out:', {
+                id: contact._id,
+                nombreCompleto: contact.nombreCompleto,
+                hasId,
+                hasName
+              });
+            }
+            return !passes; // Invertido para ver los que NO pasan
+          });
+          
+          console.log('📊 Contacts that will be filtered out:', filteredOutContacts.length);
+          
+          // Mapear los contactos manualmente ya que getContacts no los mapea
+          const mappedContacts = contactsData
+          .filter((contact: any) => {
+            // Filter out contacts that don't have essential fields
+            const hasId = contact._id !== undefined && contact._id !== null;
+            const hasName = contact.nombreCompleto !== undefined && contact.nombreCompleto !== null && contact.nombreCompleto.toString().trim() !== '';
+            return hasId && hasName;
+          })
+          .map((contact: any) => ({
+            id: contact._id?.toString() || contact._id,
+            nombre: contact.nombreCompleto?.toString() || '',
+            telefono: contact.telefono || undefined,
+            instagram: contact.instagram || undefined,
+            universidad: contact.universidadId?.nombre || contact.universidad || 'Sin especificar',
+            titulacion: contact.titulacionId?.nombre || contact.titulacion || 'Sin especificar',
+            curso: contact.curso || 1,
+            año_nacimiento: contact.anioNacimiento || contact.año_nacimiento || undefined,
+            fecha_alta: contact.fechaAlta || contact.createdAt,
+            comercial_id: contact.comercialId?._id || contact.comercialId || null,
+            comercial_nombre: contact.comercialId?.nombre || 'Sin asignar',
+            dia_libre: contact.diaLibre || undefined
+          }));
+        
+          console.log('📝 Before setContacts - current state:', contacts.length);
+          console.log('📋 ALL mapped contacts:', mappedContacts.map(c => ({ id: c.id, nombre: c.nombre })));
+          setContacts(mappedContacts);
+          console.log('✅ Contacts loaded from API:', mappedContacts.length);
+          console.log('📝 After setContacts - new data set with:', mappedContacts.length, 'contacts');
+        } else {
+          console.log('❌ No valid contacts data found:', response.data);
+          setContacts([]);
+          setError('No se encontraron contactos válidos');
+        }
+      } else {
+        console.log('❌ Invalid response format:', response);
+        setError('Formato de respuesta inválido');
       }
-    };
-
-    loadUniversities();
+    } catch (err: any) {
+      console.error('❌ Error loading contacts:', err);
+      setError(err.message || 'Error cargando contactos');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  // Cargar usuarios comerciales
-  useEffect(() => {
-    const loadComerciales = async () => {
-      try {
-        console.log('Cargando usuarios comerciales...');
-        await getAllUsers();
-        console.log('Usuarios comerciales cargados:', users);
-      } catch (error) {
-        console.error('Error al cargar usuarios comerciales:', error);
-      }
-    };
-
-    loadComerciales();
-  }, [getAllUsers]);
-
-  useEffect(() => {
-    if (contact) {
-      setFormData({
-        universidad: contact.universidad,
-        universidadId: '', // Se llenará cuando se carguen las universidades
-        titulacion: contact.titulacion,
-        titulacionId: '', // Se llenará cuando se carguen las titulaciones
-        nombre: contact.nombre,
-        curso: contact.curso,
-        telefono: contact.telefono || '',
-        instagram: contact.instagram || '',
-        año_nacimiento: contact.año_nacimiento || null,
-        comercial: contact.comercial_id || ''
-      });
+  // Cargar contactos de un comercial específico y sus subordinados
+  const loadComercialContacts = useCallback(async (comercialId: string, filters?: ContactFilters & { page?: number; limit?: number; sortBy?: string; sortOrder?: 'asc' | 'desc' }) => {
+    try {
+      setLoading(true);
+      setError(null);
+      console.log('🔄 Loading comercial contacts for:', comercialId);
+      const response = await contactsService.getContactosComercial(comercialId, filters);
       
-      // Cargar titulaciones para la universidad del contacto desde los datos de la API
-      if (contact.universidad && universities.length > 0) {
-        const selectedUniversity = universities.find(uni => uni.nombre === contact.universidad);
-        if (selectedUniversity && selectedUniversity.titulaciones) {
-          const titulacionesNames = selectedUniversity.titulaciones.map(tit => tit.nombre);
-          setAvailableTitulaciones(titulacionesNames);
+      if (response.success && response.data) {
+        // Los contactos están en response.data.data según la estructura del backend
+        const contactsData = response.data.data || response.data;
+        console.log('🔍 Raw comercial API response data:', contactsData);
+        console.log('📊 Total comercial contacts received:', contactsData?.length || 0);
+        console.log('📊 Full response structure:', response);
+        console.log('📊 Response.data structure:', response.data);
+        
+        if (contactsData && Array.isArray(contactsData)) {
+          // Mapear los contactos manualmente
+          const mappedContacts = contactsData
+          .filter((contact: any) => {
+            const hasId = contact._id !== undefined && contact._id !== null;
+            const hasName = contact.nombreCompleto !== undefined && contact.nombreCompleto !== null && contact.nombreCompleto.toString().trim() !== '';
+            return hasId && hasName;
+          })
+          .map((contact: any) => ({
+            id: contact._id?.toString() || contact._id,
+            nombre: contact.nombreCompleto?.toString() || '',
+            telefono: contact.telefono || undefined,
+            instagram: contact.instagram || undefined,
+            universidad: contact.universidadId?.nombre || contact.universidad || 'Sin especificar',
+            titulacion: contact.titulacionId?.nombre || contact.titulacion || 'Sin especificar',
+            curso: contact.curso || 1,
+            año_nacimiento: contact.anioNacimiento || contact.año_nacimiento || undefined,
+            fecha_alta: contact.fechaAlta || contact.createdAt,
+            comercial_id: contact.comercialId?._id || contact.comercialId || null,
+            comercial_nombre: contact.comercialId?.nombre || 'Sin asignar'
+          }));
+        
+          setContacts(mappedContacts);
+          console.log('✅ Comercial contacts loaded from API:', mappedContacts.length);
+        } else {
+          console.log('❌ No valid contacts data found:', response.data);
+          setContacts([]);
+          setError('No se encontraron contactos válidos');
         }
-      }
-    }
-  }, [contact, universities]);
-
-  const handleUniversidadChange = (universidad: string) => {
-    const selectedUniversity = universities.find(uni => uni.nombre === universidad);
-    
-    setFormData(prev => ({
-      ...prev,
-      universidad,
-      universidadId: selectedUniversity?._id || '',
-      titulacion: '', // Reset titulación cuando cambia la universidad
-      titulacionId: '' // Reset titulación ID cuando cambia la universidad
-    }));
-    
-    // Actualizar titulaciones disponibles desde los datos de la API
-    if (universidad && selectedUniversity) {
-      console.log('Universidad seleccionada:', selectedUniversity);
-      
-      if (selectedUniversity.titulaciones) {
-        const titulacionesNames = selectedUniversity.titulaciones.map(tit => tit.nombre);
-        console.log('Titulaciones disponibles:', titulacionesNames);
-        setAvailableTitulaciones(titulacionesNames);
       } else {
-        console.log('No se encontraron titulaciones para la universidad:', universidad);
-        setAvailableTitulaciones([]);
+        console.log('❌ Invalid comercial response format:', response);
+        setError('Formato de respuesta inválido');
       }
-    } else {
-      setAvailableTitulaciones([]);
+    } catch (err: any) {
+      console.error('❌ Error loading comercial contacts:', err);
+      setError(err.message || 'Error cargando contactos del comercial');
+    } finally {
+      setLoading(false);
     }
-    
-    // Limpiar error de universidad si existe
-    if (errors.universidad) {
-      setErrors(prev => ({ ...prev, universidad: '' }));
+  }, []);
+
+  // Cargar contactos al montar el componente
+  // Modificar el useEffect para esperar a que shouldLoad sea true
+  useEffect(() => {
+    if (shouldLoad) {
+      loadContacts();
     }
-  };
+  }, [loadContacts, shouldLoad]);
 
-  const handleTitulacionChange = (titulacion: string) => {
-    const selectedUniversity = universities.find(uni => uni.nombre === formData.universidad);
-    const selectedTitulacion = selectedUniversity?.titulaciones?.find(tit => tit.nombre === titulacion);
-    
-    setFormData(prev => ({
-      ...prev,
-      titulacion,
-      titulacionId: selectedTitulacion?._id || ''
-    }));
-    
-    // Limpiar error de titulación si existe
-    if (errors.titulacion) {
-      setErrors(prev => ({ ...prev, titulacion: '' }));
-    }
-  };
-
-  const validatePhone = (phone: string) => {
-    if (!phone) return true; // Es opcional
-    const phoneRegex = /^[\+]?[0-9\s\-\(\)]{9,15}$/;
-    return phoneRegex.test(phone);
-  };
-
-  const validateBirthYear = (year: number | null) => {
-    if (year === null) return true; // Es opcional
-    const currentYear = new Date().getFullYear();
-    return year >= 1900 && year <= currentYear;
-  };
-
-  const validateInstagram = (instagram: string) => {
-    if (!instagram) return true; // Es opcional
-    // Remover @ si está presente y validar formato
-    const cleanInstagram = instagram.replace('@', '');
-    const instagramRegex = /^[a-zA-Z0-9._]{1,30}$/;
-    return instagramRegex.test(cleanInstagram);
-  };
-
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-
-    // Campos obligatorios
-    if (!formData.universidad.trim()) {
-      newErrors.universidad = 'La universidad es requerida';
-    }
-
-    if (!formData.titulacion.trim()) {
-      newErrors.titulacion = 'La titulación es requerida';
-    }
-
-    if (!formData.nombre.trim()) {
-      newErrors.nombre = 'El nombre es requerido';
-    }
-
-    if (formData.curso === null || formData.curso < 1 || formData.curso > 6) {
-      newErrors.curso = 'El curso es requerido y debe estar entre 1 y 6';
-    }
-
-    // Validación: al menos uno entre teléfono e Instagram
-    if (!formData.telefono.trim() && !formData.instagram.trim()) {
-      newErrors.contacto = 'Debe proporcionar al menos un número de teléfono o Instagram';
-    }
-
-    // Validaciones de formato
-    if (formData.telefono && !validatePhone(formData.telefono)) {
-      newErrors.telefono = 'El formato del teléfono no es válido';
-    }
-
-    if (formData.instagram && !validateInstagram(formData.instagram)) {
-      newErrors.instagram = 'El formato del Instagram no es válido (solo letras, números, puntos y guiones bajos, máximo 30 caracteres)';
-    }
-
-    if (formData.año_nacimiento && !validateBirthYear(formData.año_nacimiento)) {
-      newErrors.año_nacimiento = 'El año de nacimiento debe estar entre 1900 y el año actual';
-    }
-
-    // Validación de duplicados
-    const duplicates = checkDuplicates(
-      formData.telefono || undefined,
-      formData.instagram || undefined,
-      contact?.id
-    );
-
-    if (duplicates.telefono) {
-      newErrors.telefono = 'Este número de teléfono ya está registrado';
-    }
-
-    if (duplicates.instagram) {
-      newErrors.instagram = 'Este Instagram ya está registrado';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (validateForm()) {
-      const submitData = {
-        universidad: formData.universidad,
-        universidadId: formData.universidadId,
-        titulacion: formData.titulacion,
-        titulacionId: formData.titulacionId,
-        nombre: formData.nombre,
-        curso: formData.curso,
-        telefono: formData.telefono || undefined,
-        instagram: formData.instagram || undefined,
-        año_nacimiento: formData.año_nacimiento || undefined,
-        comercial: formData.comercial || undefined
-      };
+  const addContact = useCallback(async (contactData: Omit<Contact, 'id' | 'fecha_alta'>, currentUser?: any) => {
+    console.log('🚀 useContacts.addContact called with:', contactData, currentUser);
+    console.log('🔍 Universidad value being sent:', contactData.universidad);
+    console.log('🔍 Titulacion value being sent:', contactData.titulacion);
+    try {
+      setLoading(true);
+      setError(null);
       
-      console.log('📝 Submitting contact form:', submitData);
-      const result = onSubmit(submitData);
-      console.log('✅ Contact form submitted successfully:', result);
+      console.log('📞 Calling contactsService.createContact...');
+      const response = await contactsService.createContact(contactData);
+      console.log('📥 Response from contactsService.createContact:', response);
+      
+      if (response.success && response.data) {
+        console.log('✅ Contact created successfully');
+        // Recargar la lista de contactos
+        await loadContacts();
+        return response.data.contacto;
+      } else {
+        console.log('⚠️ Response not successful or no data:', response);
+      }
+    } catch (err: any) {
+      console.error('❌ Error creating contact:', err);
+      setError(err.message || 'Error creando contacto');
+      throw err;
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [loadContacts]);
 
-  const handleChange = (field: string, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
+  const updateContact = useCallback(async (id: string, contactData: Omit<Contact, 'id' | 'fecha_alta'>) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await contactsService.updateContact(id, contactData);
+      
+      if (response.success) {
+        console.log('✅ Contact updated successfully');
+        // Recargar la lista de contactos
+        await loadContacts();
+      }
+    } catch (err: any) {
+      console.error('❌ Error updating contact:', err);
+      setError(err.message || 'Error actualizando contacto');
+      throw err;
+    } finally {
+      setLoading(false);
     }
+  }, [loadContacts]);
+
+  const deleteContact = useCallback(async (id: string) => {
+    if (window.confirm('¿Estás seguro de que quieres eliminar este contacto?')) {
+      try {
+        console.log('🗑️ Starting delete for contact:', id);
+        setLoading(true);
+        setError(null);
+        
+        const response = await contactsService.deleteContact(id);
+        console.log('📥 Delete response:', response);
+        
+        if (response.success) {
+          console.log('✅ Contact deleted successfully, now reloading contacts...');
+          // Recargar la lista de contactos
+          await loadContacts();
+          console.log('✅ Contacts reloaded after deletion');
+          return true; // Retornar true para indicar éxito
+        }
+        return false;
+      } catch (err: any) {
+        console.error('❌ Error deleting contact:', err);
+        setError(err.message || 'Error eliminando contacto');
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    }
+    return false; // Retornar false si se cancela
+  }, [loadContacts]);
+
+  const deleteMultipleContacts = useCallback(async (ids: string[]) => {
+    const count = ids.length;
+    if (window.confirm(`¿Estás seguro de que quieres eliminar ${count} contacto${count > 1 ? 's' : ''}?`)) {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Eliminar contactos uno por uno
+        for (const id of ids) {
+          await contactsService.deleteContact(id);
+        }
+        
+        console.log('✅ Multiple contacts deleted successfully');
+        // Recargar la lista de contactos
+        await loadContacts();
+      } catch (err: any) {
+        console.error('❌ Error deleting multiple contacts:', err);
+        setError(err.message || 'Error eliminando contactos');
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    }
+  }, [loadContacts]);
+
+  const checkDuplicates = useCallback(async (telefono?: string, instagram?: string, excludeId?: string) => {
+    // Esta funcionalidad se puede implementar en el backend si es necesario
+    return {
+      telefono: false,
+      instagram: false
+    };
+  }, []);
+
+  const refreshContacts = useCallback(() => {
+    return loadContacts();
+  }, [loadContacts]);
+
+  return {
+    contacts,
+    loading,
+    error,
+    loadContacts,
+    loadComercialContacts,
+    addContact,
+    updateContact,
+    deleteContact,
+    deleteMultipleContacts,
+    checkDuplicates,
+    refreshContacts
   };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-lg max-h-screen overflow-y-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-gray-900">
-            {contact ? 'Editar Contacto' : 'Nuevo Contacto'}
-          </h2>
-          <button
-            onClick={onCancel}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* 1. Universidad - Obligatorio */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Universidad *
-            </label>
-            <select
-              value={formData.universidad}
-              onChange={(e) => handleUniversidadChange(e.target.value)}
-              disabled={loadingUniversities}
-              className={`w-full border rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                errors.universidad ? 'border-red-300' : 'border-gray-300'
-              } ${loadingUniversities ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-            >
-              <option value="">
-                {loadingUniversities ? 'Cargando universidades...' : 'Selecciona una universidad'}
-              </option>
-              {universities.map(uni => (
-                <option key={uni._id} value={uni.nombre}>{uni.nombre}</option>
-              ))}
-            </select>
-            {errors.universidad && (
-              <p className="text-red-500 text-sm mt-1">{errors.universidad}</p>
-            )}
-          </div>
-
-          {/* 2. Titulación - Obligatorio */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Titulación *
-            </label>
-            <select
-              value={formData.titulacion}
-              onChange={(e) => handleTitulacionChange(e.target.value)}
-              disabled={!formData.universidad}
-              className={`w-full border rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                errors.titulacion ? 'border-red-300' : 'border-gray-300'
-              } ${!formData.universidad ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-            >
-              <option value="">
-                {!formData.universidad ? 'Primero selecciona una universidad' : 'Selecciona una titulación'}
-              </option>
-              {availableTitulaciones.map(tit => (
-                <option key={tit} value={tit}>{tit}</option>
-              ))}
-            </select>
-            {errors.titulacion && (
-              <p className="text-red-500 text-sm mt-1">{errors.titulacion}</p>
-            )}
-          </div>
-
-          {/* 3. Nombre - Obligatorio */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Nombre *
-            </label>
-            <input
-              type="text"
-              value={formData.nombre}
-              onChange={(e) => handleChange('nombre', e.target.value)}
-              className={`w-full border rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                errors.nombre ? 'border-red-300' : 'border-gray-300'
-              }`}
-              placeholder="Nombre completo del estudiante"
-            />
-            {errors.nombre && (
-              <p className="text-red-500 text-sm mt-1">{errors.nombre}</p>
-            )}
-          </div>
-
-          {/* 4. Curso - Obligatorio */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Curso *
-            </label>
-            <select
-              value={formData.curso || ''}
-              onChange={(e) => handleChange('curso', e.target.value ? parseInt(e.target.value) : null)}
-              className={`w-full border rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                errors.curso ? 'border-red-300' : 'border-gray-300'
-              }`}
-            >
-              <option value="">Selecciona el curso</option>
-              {[1, 2, 3, 4, 5, 6].map(curso => (
-                <option key={curso} value={curso}>{curso}º</option>
-              ))}
-            </select>
-            {errors.curso && (
-              <p className="text-red-500 text-sm mt-1">{errors.curso}</p>
-            )}
-          </div>
-
-          {/* Mensaje de error general para contacto */}
-          {errors.contacto && (
-            <div className="bg-red-50 border border-red-200 rounded-md p-3 mb-4">
-              <p className="text-red-600 text-sm">{errors.contacto}</p>
-            </div>
-          )}
-
-          {/* 5. Número de teléfono - Opcional pero al menos uno requerido */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Número de teléfono <span className="text-gray-500 font-normal">(al menos uno requerido)</span>
-            </label>
-            <input
-              type="tel"
-              value={formData.telefono}
-              onChange={(e) => handleChange('telefono', e.target.value)}
-              className={`w-full border rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                errors.telefono ? 'border-red-300' : 'border-gray-300'
-              }`}
-              placeholder="Ej: 666 123 456"
-            />
-            {errors.telefono && (
-              <p className="text-red-500 text-sm mt-1">{errors.telefono}</p>
-            )}
-          </div>
-
-          {/* 6. Instagram - Opcional pero al menos uno requerido */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Instagram <span className="text-gray-500 font-normal">(al menos uno requerido)</span>
-            </label>
-            <div className="relative">
-              <span className="absolute left-3 top-2 text-gray-500">@</span>
-              <input
-                type="text"
-                value={formData.instagram}
-                onChange={(e) => handleChange('instagram', e.target.value)}
-                className={`w-full border rounded-md pl-8 pr-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                  errors.instagram ? 'border-red-300' : 'border-gray-300'
-                }`}
-                placeholder="usuario_instagram"
-                maxLength={30}
-              />
-            </div>
-            {errors.instagram && (
-              <p className="text-red-500 text-sm mt-1">{errors.instagram}</p>
-            )}
-            <p className="text-xs text-gray-500 mt-1">
-              Solo letras, números, puntos y guiones bajos. Máximo 30 caracteres.
-            </p>
-          </div>
-
-          {/* 7. Año de nacimiento - Opcional */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Año de nacimiento <span className="text-gray-500 font-normal">(opcional)</span>
-            </label>
-            <input
-              type="number"
-              min="1900"
-              max={new Date().getFullYear()}
-              value={formData.año_nacimiento || ''}
-              onChange={(e) => handleChange('año_nacimiento', e.target.value ? parseInt(e.target.value) : null)}
-              className={`w-full border rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                errors.año_nacimiento ? 'border-red-300' : 'border-gray-300'
-              }`}
-              placeholder="Ej: 1995"
-            />
-            {errors.año_nacimiento && (
-              <p className="text-red-500 text-sm mt-1">{errors.año_nacimiento}</p>
-            )}
-          </div>
-
-          {/* 8. Comercial - Opcional - Solo visible para administradores */}
-          {user?.role?.toLowerCase() === 'admin' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Comercial <span className="text-gray-500 font-normal">(opcional)</span>
-              </label>
-              <select
-                value={formData.comercial}
-                onChange={(e) => handleChange('comercial', e.target.value)}
-                className={`w-full border rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                  errors.comercial ? 'border-red-300' : 'border-gray-300'
-                }`}
-              >
-                <option value="">Selecciona un comercial</option>
-                {users.map(user => (
-                  <option key={user.id} value={user.id}>
-                    {user.nombre} ({user.email})
-                  </option>
-                ))}
-              </select>
-              {errors.comercial && (
-                <p className="text-red-500 text-sm mt-1">{errors.comercial}</p>
-              )}
-            </div>
-          )}
-
-          <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
-            <button
-              type="button"
-              onClick={onCancel}
-              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              {contact ? 'Actualizar' : 'Crear'} Contacto
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
 }

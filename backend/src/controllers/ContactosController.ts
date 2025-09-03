@@ -173,7 +173,8 @@ export class ContactosController {
         telefono,
         instagram,
         anioNacimiento,
-        comercialId
+        comercialId,
+        diaLibre // ← Añadir este campo
       } = req.body;
 
       // Validaciones
@@ -193,7 +194,8 @@ export class ContactosController {
         instagram,
         anioNacimiento,
         comercialId: comercialId || req.user!.userId,
-        createdBy: req.user!.userId
+        createdBy: req.user!.userId,
+        diaLibre // ← Añadir este campo
       });
 
       await nuevoContacto.save();

@@ -62,7 +62,8 @@ export const useContacts = (shouldLoad: boolean = true) => {
             año_nacimiento: contact.anioNacimiento || contact.año_nacimiento || undefined,
             fecha_alta: contact.fechaAlta || contact.createdAt,
             comercial_id: contact.comercialId?._id || contact.comercialId || null,
-            comercial_nombre: contact.comercialId?.nombre || 'Sin asignar'
+            comercial_nombre: contact.comercialId?.nombre || 'Sin asignar',
+            dia_libre: contact.diaLibre || undefined
           }));
         
           console.log('📝 Before setContacts - current state:', contacts.length);

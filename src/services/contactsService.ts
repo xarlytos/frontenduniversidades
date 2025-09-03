@@ -58,6 +58,7 @@ export class ContactsService {
           titulacionId: contact.titulacionId?._id,
           curso: contact.curso,
           año_nacimiento: contact.año_nacimiento,
+          dia_libre: contact.diaLibre, // ← MAPEO CORREGIDO
           fecha_alta: contact.fechaAlta || contact.createdAt,
           comercial_id: contact.comercialId?._id,
           comercial_nombre: contact.comercialId?.nombre,
@@ -96,13 +97,11 @@ export class ContactsService {
 
   async createContact(contact: Omit<Contact, 'id' | 'fecha_alta'>): Promise<ApiResponse<ContactResponse>> {
     console.log('🔧 contactsService.createContact called with:', contact);
-    console.log('🔧 Contact universidad type:', typeof contact.universidad);
-    console.log('🔧 Contact titulacion type:', typeof contact.titulacion);
     console.log('🔧 Contact universidadId:', contact.universidadId);
     console.log('🔧 Contact titulacionId:', contact.titulacionId);
     
     try {
-      // Usar los IDs directamente del formulario (ya no necesitamos mappingService)
+      // Usar los IDs directamente del formulario
       if (!contact.universidadId || !contact.titulacionId) {
         throw new Error('Universidad ID y Titulación ID son requeridos');
       }
@@ -116,7 +115,8 @@ export class ContactsService {
         titulacionId: contact.titulacionId,
         curso: contact.curso,
         anioNacimiento: contact.año_nacimiento,
-        comercialId: contact.comercial
+        comercialId: contact.comercial,
+        diaLibre: contact.dia_libre // ← MAPEO AGREGADO
       };
       
       console.log('📤 Sending POST request with data:', backendContact);
@@ -143,6 +143,7 @@ export class ContactsService {
     if (contact.curso) backendContact.curso = contact.curso;
     if (contact.año_nacimiento) backendContact.anioNacimiento = contact.año_nacimiento;
     if (contact.comercial) backendContact.comercialId = contact.comercial;
+    if (contact.dia_libre !== undefined) backendContact.diaLibre = contact.dia_libre; // ← MAPEO AGREGADO
     
     return apiService.put<ContactResponse>(`/contactos/${id}`, backendContact);
   }

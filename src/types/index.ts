@@ -15,6 +15,7 @@ export interface Contact {
   comercial?: string;
   email?: string;
   aportado_por?: string;
+  dia_libre?: string;
 }
 
 export interface ContactFilters {
@@ -24,6 +25,7 @@ export interface ContactFilters {
   aportado_por: string;
   consentimiento: string;
   search: string;
+  dia_libre: string;
 }
 
 export interface UniversityStats {

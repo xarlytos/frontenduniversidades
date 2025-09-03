@@ -44,7 +44,8 @@ export default function ContactsPage({
     curso: initialFilters.curso || '',
     search: initialFilters.search || '',
     aportado_por: '',
-    consentimiento: ''
+    consentimiento: '',
+    dia_libre: ''
   });
   
   // Removido el estado local de contactos ya que ahora usamos solo propContacts
@@ -185,15 +186,6 @@ export default function ContactsPage({
     console.log('🔍 ContactsPage - Current filters:', filters);
     console.log('📊 ContactsPage - Total contacts before filtering:', contacts.length);
     
-    // Verificar específicamente el contacto "holaaaaaa"
-    const holaaaaaaContact = contacts.find(c => c.nombre === 'holaaaaaa');
-    if (holaaaaaaContact) {
-      console.log('🎯 Found "holaaaaaa" in contacts array:', holaaaaaaContact);
-    } else {
-      console.log('⚠️ "holaaaaaa" NOT found in contacts array!');
-      console.log('📋 Contacts array names:', contacts.map(c => c.nombre));
-    }
-    
     const filtered = contacts.filter(contact => {
       const matchesSearch = filters.search === '' || 
         contact.nombre.toLowerCase().includes(filters.search.toLowerCase()) ||
@@ -202,37 +194,12 @@ export default function ContactsPage({
       const matchesUniversidad = filters.universidad === '' || contact.universidad === filters.universidad;
       const matchesTitulacion = filters.titulacion === '' || contact.titulacion === filters.titulacion;
       const matchesCurso = filters.curso === '' || contact.curso?.toString() === filters.curso;
+      const matchesDiaLibre = filters.dia_libre === '' || contact.dia_libre === filters.dia_libre;
       
-      const passes = matchesSearch && matchesUniversidad && matchesTitulacion && matchesCurso;
-      
-      if (contact.nombre === 'holaaaaaa') {
-        console.log('🔍 Filtering "holaaaaaa":', {
-          passes,
-          matchesSearch,
-          matchesUniversidad,
-          matchesTitulacion,
-          matchesCurso,
-          filters,
-          contactData: contact
-        });
-      }
-      
-      if (!passes) {
-        console.log('❌ Contact filtered out:', {
-          contact: contact.nombre,
-          matchesSearch,
-          matchesUniversidad,
-          matchesTitulacion,
-          matchesCurso,
-          filters
-        });
-      }
-      
-      return passes;
+      return matchesSearch && matchesUniversidad && matchesTitulacion && matchesCurso && matchesDiaLibre;
     });
     
     console.log('✅ ContactsPage - Contacts after filtering:', filtered.length);
-    console.log('📋 Filtered contacts names:', filtered.map(c => c.nombre));
     return filtered;
   }, [contacts, filters]);
 
@@ -341,7 +308,7 @@ export default function ContactsPage({
     }
   
     try {
-      // Preparar los datos para el Excel - solo los campos requeridos
+      // Preparar los datos para el Excel - incluyendo el nuevo campo
       const excelData = selectedContactsData.map(contact => ({
         'Nombre': contact.nombre || '',
         'Teléfono': contact.telefono || '',
@@ -349,6 +316,7 @@ export default function ContactsPage({
         'Universidad': contact.universidad || '',
         'Titulación': contact.titulacion || '',
         'Curso': contact.curso || '',
+        'Día Libre': contact.dia_libre || '',
         'Año de Nacimiento': contact.año_nacimiento || '',
         'Comercial': contact.comercial_nombre || ''
       }));
@@ -358,7 +326,7 @@ export default function ContactsPage({
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, 'Contactos');
   
-      // Ajustar el ancho de las columnas para los 8 campos
+      // Ajustar el ancho de las columnas para los 9 campos
       const columnWidths = [
         { wch: 20 }, // Nombre
         { wch: 15 }, // Teléfono
@@ -366,6 +334,7 @@ export default function ContactsPage({
         { wch: 25 }, // Universidad
         { wch: 30 }, // Titulación
         { wch: 8 },  // Curso
+        { wch: 12 }, // Día Libre
         { wch: 15 }, // Año de Nacimiento
         { wch: 20 }  // Comercial
       ];
@@ -535,6 +504,28 @@ export default function ContactsPage({
           </div>
         </div>
         
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Día Libre
+            </label>
+            <select
+              value={filters.dia_libre}
+              onChange={(e) => handleFilterChange('dia_libre', e.target.value)}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="">Todos</option>
+              <option value="Lunes">Lunes</option>
+              <option value="Martes">Martes</option>
+              <option value="Miércoles">Miércoles</option>
+              <option value="Jueves">Jueves</option>
+              <option value="Viernes">Viernes</option>
+              <option value="Sábado">Sábado</option>
+              <option value="Domingo">Domingo</option>
+            </select>
+          </div>
+        </div>
+        
         <div className="relative">
           <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
           <input
@@ -578,6 +569,9 @@ export default function ContactsPage({
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Curso
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Día Libre
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Año Nacimiento
@@ -633,6 +627,9 @@ export default function ContactsPage({
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {contact.curso ? `${contact.curso}º` : 'N/D'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {contact.dia_libre || 'N/D'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {contact.año_nacimiento || 'N/D'}

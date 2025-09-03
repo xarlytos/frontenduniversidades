@@ -14,6 +14,7 @@ export interface IContacto extends Document {
   createdBy: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
+  diaLibre?: string; // ← Añadir este campo
 }
 
 const contactoSchema = new Schema<IContacto>({
@@ -70,6 +71,11 @@ const contactoSchema = new Schema<IContacto>({
     type: Schema.Types.ObjectId,
     ref: 'Usuario',
     required: true
+  },
+  diaLibre: {
+    type: String,
+    enum: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'],
+    required: false
   }
 }, {
   timestamps: true
