@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu } from 'lucide-react';
+import { Eye } from 'lucide-react';  // Cambiar Menu por Eye
 import { useAuth } from './hooks/useAuth';
 import LoginPage from './components/LoginPage';
 import Sidebar from './components/Sidebar';
@@ -99,21 +99,20 @@ function App() {
           onPageChange={setCurrentPage}
           user={user}
           onLogout={logout}
+          onToggleSidebar={toggleSidebar}  // Pasar la función
         />
       )}
       
-      {/* Botón centrado verticalmente en el borde del sidebar */}
-      <button
-        onClick={toggleSidebar}
-        className={`fixed top-1/2 -translate-y-1/2 z-50 p-2 bg-white border border-gray-300 rounded-lg shadow-md hover:bg-gray-50 transition-all duration-300 ${
-          isSidebarVisible 
-            ? 'left-[240px]'  // Mitad dentro del sidebar (240px del ancho de 256px)
-            : 'left-4'        // Esquina cuando está oculto
-        }`}
-        title={isSidebarVisible ? 'Ocultar sidebar' : 'Mostrar sidebar'}
-      >
-        <Menu className="w-5 h-5" />
-      </button>
+      {/* Botón flotante solo cuando sidebar está oculto */}
+      {!isSidebarVisible && (
+        <button
+          onClick={toggleSidebar}
+          className="fixed top-6 left-6 z-50 p-2 bg-white border border-gray-300 rounded-lg shadow-md hover:bg-gray-50 transition-colors"
+          title="Mostrar sidebar"
+        >
+          <Eye className="w-5 h-5 text-gray-600" />
+        </button>
+      )}
       
       <main className="flex-1 overflow-auto relative">
         {currentPage === 'contactos' && (

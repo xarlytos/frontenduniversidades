@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Users, BarChart3, Settings, LogOut, Shield, User, UserCog, Eye } from 'lucide-react';
+import { Users, BarChart3, Settings, LogOut, Shield, User, UserCog, Eye, EyeOff } from 'lucide-react';
 import { User as UserType } from '../types/auth';
 import { authService } from '../services/authService';
 
@@ -8,9 +8,10 @@ interface SidebarProps {
   onPageChange: (page: 'contactos' | 'conteo' | 'usuarios' | 'admin' | 'contactoscompleta') => void;
   user: UserType | null;
   onLogout: () => void;
+  onToggleSidebar?: () => void;  // Nueva prop
 }
 
-export default function Sidebar({ currentPage, onPageChange, user, onLogout }: SidebarProps) {
+export default function Sidebar({ currentPage, onPageChange, user, onLogout, onToggleSidebar }: SidebarProps) {
   const [userPermissions, setUserPermissions] = useState<string[]>([]);
 
   // Obtener permisos del usuario cuando esté autenticado
@@ -56,12 +57,22 @@ export default function Sidebar({ currentPage, onPageChange, user, onLogout }: S
   
   return (
     <div className="w-64 bg-white border-r border-gray-200 h-screen flex flex-col">
-      {/* Header */}
-      <div className="p-6 border-b border-gray-200">
-        <h1 className="text-xl font-bold text-gray-900">Base de Contactos</h1>
-        <p className="text-sm text-gray-500">Gestión Universitaria</p>
+      {/* Header con botón toggle */}
+      <div className="p-6 border-b border-gray-200 flex justify-between items-start">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">Base de Contactos</h1>
+          <p className="text-sm text-gray-500">Gestión Universitaria</p>
+        </div>
+        {onToggleSidebar && (
+          <button
+            onClick={onToggleSidebar}
+            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            title="Ocultar sidebar"
+          >
+            <EyeOff className="w-5 h-5" />
+          </button>
+        )}
       </div>
-      
       {/* User Info */}
       {user && (
         <div className="p-4 border-b border-gray-200 bg-gray-50">
