@@ -102,22 +102,20 @@ function App() {
         />
       )}
       
-      {/* Botón con posicionamiento inteligente */}
+      {/* Botón centrado verticalmente en el borde del sidebar */}
       <button
         onClick={toggleSidebar}
-        className={`fixed top-4 z-50 p-2 bg-white border border-gray-300 rounded-lg shadow-md hover:bg-gray-50 transition-all duration-300 ${
+        className={`fixed top-1/2 -translate-y-1/2 z-50 p-2 bg-white border border-gray-300 rounded-lg shadow-md hover:bg-gray-50 transition-all duration-300 ${
           isSidebarVisible 
-            ? 'left-[240px]'  // Dentro del sidebar
-            : 'left-16'       // Con margen cuando está oculto (no en left-4)
+            ? 'left-[240px]'  // Mitad dentro del sidebar (240px del ancho de 256px)
+            : 'left-4'        // Esquina cuando está oculto
         }`}
         title={isSidebarVisible ? 'Ocultar sidebar' : 'Mostrar sidebar'}
       >
         <Menu className="w-5 h-5" />
       </button>
       
-      <main className={`flex-1 overflow-auto relative ${
-        !isSidebarVisible ? 'pl-20' : ''  // Padding izquierdo cuando sidebar está oculto
-      }`}>
+      <main className="flex-1 overflow-auto relative">
         {currentPage === 'contactos' && (
           <ContactsPage
             contacts={filteredContacts}
