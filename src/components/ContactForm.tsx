@@ -26,7 +26,8 @@ export default function ContactForm({ contact, onSubmit, onCancel }: ContactForm
     telefono: '',
     instagram: '',
     año_nacimiento: null as number | null,
-    comercial: ''
+    comercial: '',
+    dia_libre: ''
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -80,7 +81,8 @@ export default function ContactForm({ contact, onSubmit, onCancel }: ContactForm
         telefono: contact.telefono || '',
         instagram: contact.instagram || '',
         año_nacimiento: contact.año_nacimiento || null,
-        comercial: contact.comercial_id || ''
+        comercial: contact.comercial_id || '',
+        dia_libre: contact.dia_libre || ''
       });
       
       // Cargar titulaciones para la universidad del contacto desde los datos de la API
@@ -233,7 +235,8 @@ export default function ContactForm({ contact, onSubmit, onCancel }: ContactForm
         telefono: formData.telefono || undefined,
         instagram: formData.instagram || undefined,
         año_nacimiento: formData.año_nacimiento || undefined,
-        comercial: formData.comercial || undefined
+        comercial: formData.comercial || undefined,
+        dia_libre: formData.dia_libre || undefined
       };
       
       console.log('📝 Submitting contact form:', submitData);
@@ -429,7 +432,28 @@ export default function ContactForm({ contact, onSubmit, onCancel }: ContactForm
             )}
           </div>
 
-          {/* 8. Comercial - Opcional - Solo visible para administradores */}
+          {/* 8. Día libre - Opcional */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Día libre <span className="text-gray-500 font-normal">(opcional)</span>
+            </label>
+            <select
+              value={formData.dia_libre}
+              onChange={(e) => handleChange('dia_libre', e.target.value)}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+            >
+              <option value="">Ninguno</option>
+              <option value="Lunes">Lunes</option>
+              <option value="Martes">Martes</option>
+              <option value="Miércoles">Miércoles</option>
+              <option value="Jueves">Jueves</option>
+              <option value="Viernes">Viernes</option>
+              <option value="Sábado">Sábado</option>
+              <option value="Domingo">Domingo</option>
+            </select>
+          </div>
+
+          {/* 9. Comercial - Opcional - Solo visible para administradores */}
           {user?.role?.toLowerCase() === 'admin' && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">

@@ -44,8 +44,7 @@ export default function ContactsPage({
     curso: initialFilters.curso || '',
     search: initialFilters.search || '',
     aportado_por: '',
-    consentimiento: '',
-    dia_libre: ''
+    consentimiento: ''
   });
   
   // Removido el estado local de contactos ya que ahora usamos solo propContacts
@@ -440,6 +439,7 @@ export default function ContactsPage({
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          {/* Universidad */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Universidad
@@ -525,6 +525,8 @@ export default function ContactsPage({
             </select>
           </div>
         </div>
+        
+        {/* Quitar toda la sección del filtro día libre */}
         
         <div className="relative">
           <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
