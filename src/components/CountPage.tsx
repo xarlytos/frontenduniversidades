@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { BarChart3, Users, Filter, ArrowRight } from 'lucide-react';
+import { BarChart3, Users, Filter, ArrowRight, Search } from 'lucide-react';
 import { Contact, UniversityStats, TitulationStats } from '../types';
 import universidadesService, { UniversidadConEstadisticas } from '../services/universidadesService';
 import { schoolsMapping, schoolOrder, getSchoolForTitulation } from '../data/schoolsData';
@@ -11,12 +11,13 @@ interface CountPageProps {
 export default function CountPage({ onNavigateToContacts }: CountPageProps) {
   const [selectedUniversidad, setSelectedUniversidad] = useState<string>('');
   const [selectedCurso, setSelectedCurso] = useState<string>('');
+  const [searchText, setSearchText] = useState<string>(''); // Nuevo estado para búsqueda
   const [allUniversidades, setAllUniversidades] = useState<UniversidadConEstadisticas[]>([]);
   const [loadingUniversidades, setLoadingUniversidades] = useState<boolean>(true);
   const [estadisticasGenerales, setEstadisticasGenerales] = useState<any>(null);
 
   // Agregar logs para debugging
-  console.log('🎯 CountPage - Filtros actuales:', { selectedUniversidad, selectedCurso });
+  console.log('🎯 CountPage - Filtros actuales:', { selectedUniversidad, selectedCurso, searchText });
 
   useEffect(() => {
     const fetchAllUniversidades = async () => {
@@ -74,12 +75,18 @@ export default function CountPage({ onNavigateToContacts }: CountPageProps) {
     const filtered = allContacts.filter(contact => {
       const matchesUniversidad = !selectedUniversidad || contact.universidad === selectedUniversidad;
       const matchesCurso = !selectedCurso || contact.curso?.toString() === selectedCurso;
-      return matchesUniversidad && matchesCurso;
+      
+      // Nuevo filtro de búsqueda
+      const matchesSearch = !searchText || 
+        contact.universidad.toLowerCase().includes(searchText.toLowerCase()) ||
+        contact.titulacion.toLowerCase().includes(searchText.toLowerCase());
+      
+      return matchesUniversidad && matchesCurso && matchesSearch;
     });
     
     console.log('🔍 Contactos filtrados:', filtered.length, filtered);
     return filtered;
-  }, [allContacts, selectedUniversidad, selectedCurso]);
+  }, [allContacts, selectedUniversidad, selectedCurso, searchText]);
 
   // NUEVO: Calcular estadísticas incluyendo TODAS las universidades disponibles
   const universityStats = useMemo(() => {
@@ -87,11 +94,20 @@ export default function CountPage({ onNavigateToContacts }: CountPageProps) {
     
     // Primero, crear entradas para TODAS las universidades disponibles
     allUniversidades.forEach(universidad => {
-      stats[universidad.nombre] = {
-        universidad: universidad.nombre,
-        total: 0,
-        titulaciones: []
-      };
+      // Aplicar filtro de búsqueda a nivel de universidad
+      const matchesSearch = !searchText || 
+        universidad.nombre.toLowerCase().includes(searchText.toLowerCase()) ||
+        universidad.titulaciones.some(tit => 
+          tit.nombre.toLowerCase().includes(searchText.toLowerCase())
+        );
+      
+      if (matchesSearch) {
+        stats[universidad.nombre] = {
+          universidad: universidad.nombre,
+          total: 0,
+          titulaciones: []
+        };
+      }
     });
     
     // Luego, contar contactos que coinciden con los filtros
@@ -99,14 +115,17 @@ export default function CountPage({ onNavigateToContacts }: CountPageProps) {
       if (stats[contact.universidad]) {
         const matchesUniversidad = !selectedUniversidad || contact.universidad === selectedUniversidad;
         const matchesCurso = !selectedCurso || contact.curso?.toString() === selectedCurso;
+        const matchesSearch = !searchText || 
+          contact.universidad.toLowerCase().includes(searchText.toLowerCase()) ||
+          contact.titulacion.toLowerCase().includes(searchText.toLowerCase());
         
-        if (matchesUniversidad && matchesCurso) {
+        if (matchesUniversidad && matchesCurso && matchesSearch) {
           stats[contact.universidad].total++;
         }
       }
     });
 
-    // Devolver TODAS las universidades, incluso las que tienen 0 contactos
+    // Devolver TODAS las universidades que coinciden con la búsqueda
     const result = Object.values(stats).sort((a, b) => {
       if (a.total !== b.total) {
         return b.total - a.total; // Ordenar por total descendente
@@ -116,7 +135,7 @@ export default function CountPage({ onNavigateToContacts }: CountPageProps) {
     
     console.log('📊 Estadísticas por universidad (incluyendo vacías):', result);
     return result;
-  }, [allUniversidades, allContacts, selectedUniversidad, selectedCurso]);
+  }, [allUniversidades, allContacts, selectedUniversidad, selectedCurso, searchText]);
 
   // NUEVO: Calcular estadísticas de titulación incluyendo TODAS las titulaciones disponibles
   const titulationStats = useMemo(() => {
@@ -127,14 +146,21 @@ export default function CountPage({ onNavigateToContacts }: CountPageProps) {
       universidad.titulaciones.forEach(titulacion => {
         const key = `${universidad.nombre}-${titulacion.nombre}`;
         
-        stats[key] = {
-          titulacion: titulacion.nombre,
-          universidad: universidad.nombre,
-          total: 0,
-          porCurso: {},
-          porComercial: {},
-          school: universidad.codigo || 'Sin clasificar'
-        };
+        // Aplicar filtro de búsqueda
+        const matchesSearch = !searchText || 
+          universidad.nombre.toLowerCase().includes(searchText.toLowerCase()) ||
+          titulacion.nombre.toLowerCase().includes(searchText.toLowerCase());
+        
+        if (matchesSearch) {
+          stats[key] = {
+            titulacion: titulacion.nombre,
+            universidad: universidad.nombre,
+            total: 0,
+            porCurso: {},
+            porComercial: {},
+            school: universidad.codigo || 'Sin clasificar'
+          };
+        }
       });
     });
     
@@ -145,8 +171,11 @@ export default function CountPage({ onNavigateToContacts }: CountPageProps) {
       if (stats[key]) {
         const matchesUniversidadFilter = !selectedUniversidad || contact.universidad === selectedUniversidad;
         const matchesCursoFilter = !selectedCurso || contact.curso?.toString() === selectedCurso;
+        const matchesSearch = !searchText || 
+          contact.universidad.toLowerCase().includes(searchText.toLowerCase()) ||
+          contact.titulacion.toLowerCase().includes(searchText.toLowerCase());
         
-        if (matchesUniversidadFilter && matchesCursoFilter) {
+        if (matchesUniversidadFilter && matchesCursoFilter && matchesSearch) {
           stats[key].total++;
           
           // Contar por curso
@@ -170,7 +199,7 @@ export default function CountPage({ onNavigateToContacts }: CountPageProps) {
     
     console.log('🎓 Estadísticas por titulación (incluyendo vacías):', result);
     return result;
-  }, [allUniversidades, allContacts, selectedUniversidad, selectedCurso]);
+  }, [allUniversidades, allContacts, selectedUniversidad, selectedCurso, searchText]);
 
   const totalContacts = filteredContacts.length;
   const totalUniversidades = estadisticasGenerales?.totalUniversidades || allUniversidades.length;
@@ -247,6 +276,25 @@ export default function CountPage({ onNavigateToContacts }: CountPageProps) {
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Nuevo input de búsqueda */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Buscar
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-4 w-4 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                placeholder="Universidad, titulación o rama..."
+                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+          
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Universidad
