@@ -102,13 +102,13 @@ function App() {
         />
       )}
       
-      {/* Botón toggle posicionado dinámicamente */}
+      {/* Botón en el borde del sidebar */}
       <button
         onClick={toggleSidebar}
         className={`fixed top-4 z-50 p-2 bg-white border border-gray-300 rounded-lg shadow-md hover:bg-gray-50 transition-all duration-300 ${
           isSidebarVisible 
-            ? 'left-[260px]' // Pegado a la derecha del sidebar (asumiendo que el sidebar tiene 256px de ancho)
-            : 'left-4'       // En la esquina cuando el sidebar está oculto
+            ? 'left-[240px]'  // Dentro del sidebar, cerca del borde
+            : 'left-4'        // Esquina cuando está oculto
         }`}
         title={isSidebarVisible ? 'Ocultar sidebar' : 'Mostrar sidebar'}
       >
