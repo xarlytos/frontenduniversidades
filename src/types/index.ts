@@ -26,16 +26,3 @@ export interface ContactFilters {
   consentimiento: string;
   search: string;
 }
-
-export interface UniversityStats {
-  universidad: string;
-  total: number;
-  titulaciones: TitulationStats[];
-}
-
-export interface TitulationStats {
-  titulacion: string;
-  universidad: string;
-  total: number;
-  porCurso: Record<number, number>;
-}

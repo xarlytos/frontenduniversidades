@@ -193,9 +193,8 @@ export default function ContactsPage({
       const matchesUniversidad = filters.universidad === '' || contact.universidad === filters.universidad;
       const matchesTitulacion = filters.titulacion === '' || contact.titulacion === filters.titulacion;
       const matchesCurso = filters.curso === '' || contact.curso?.toString() === filters.curso;
-      const matchesDiaLibre = filters.dia_libre === '' || contact.dia_libre === filters.dia_libre;
       
-      return matchesSearch && matchesUniversidad && matchesTitulacion && matchesCurso && matchesDiaLibre;
+      return matchesSearch && matchesUniversidad && matchesTitulacion && matchesCurso;
     });
     
     console.log('✅ ContactsPage - Contacts after filtering:', filtered.length);
@@ -439,7 +438,6 @@ export default function ContactsPage({
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          {/* Universidad */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Universidad
@@ -448,15 +446,11 @@ export default function ContactsPage({
               value={filters.universidad}
               onChange={(e) => handleFilterChange('universidad', e.target.value)}
               disabled={loadingUniversities}
-              className={`w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                loadingUniversities ? 'bg-gray-100 cursor-not-allowed' : ''
-              }`}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              <option value="">
-                {loadingUniversities ? 'Cargando universidades...' : 'Todas'}
-              </option>
+              <option value="">Todas</option>
               {universities.map(uni => (
-                <option key={uni.id} value={uni.nombre}>{uni.nombre}</option>
+                <option key={uni._id} value={uni.nombre}>{uni.nombre}</option>
               ))}
             </select>
           </div>
@@ -468,19 +462,10 @@ export default function ContactsPage({
             <select
               value={filters.titulacion}
               onChange={(e) => handleFilterChange('titulacion', e.target.value)}
-              disabled={!filters.universidad || loadingTitulaciones}
-              className={`w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                (!filters.universidad || loadingTitulaciones) ? 'bg-gray-100 cursor-not-allowed' : ''
-              }`}
+              disabled={loadingTitulaciones}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              <option value="">
-                {!filters.universidad 
-                  ? 'Primero selecciona universidad' 
-                  : loadingTitulaciones 
-                    ? 'Cargando titulaciones...' 
-                    : 'Todas'
-                }
-              </option>
+              <option value="">Todas</option>
               {availableTitulaciones.map(tit => (
                 <option key={tit} value={tit}>{tit}</option>
               ))}
@@ -503,30 +488,6 @@ export default function ContactsPage({
             </select>
           </div>
         </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Día Libre
-            </label>
-            <select
-              value={filters.dia_libre}
-              onChange={(e) => handleFilterChange('dia_libre', e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="">Todos</option>
-              <option value="Lunes">Lunes</option>
-              <option value="Martes">Martes</option>
-              <option value="Miércoles">Miércoles</option>
-              <option value="Jueves">Jueves</option>
-              <option value="Viernes">Viernes</option>
-              <option value="Sábado">Sábado</option>
-              <option value="Domingo">Domingo</option>
-            </select>
-          </div>
-        </div>
-        
-        {/* Quitar toda la sección del filtro día libre */}
         
         <div className="relative">
           <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
