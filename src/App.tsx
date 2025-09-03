@@ -102,14 +102,20 @@ function App() {
         />
       )}
       
+      {/* Botón toggle posicionado dinámicamente */}
+      <button
+        onClick={toggleSidebar}
+        className={`fixed top-4 z-50 p-2 bg-white border border-gray-300 rounded-lg shadow-md hover:bg-gray-50 transition-all duration-300 ${
+          isSidebarVisible 
+            ? 'left-[260px]' // Pegado a la derecha del sidebar (asumiendo que el sidebar tiene 256px de ancho)
+            : 'left-4'       // En la esquina cuando el sidebar está oculto
+        }`}
+        title={isSidebarVisible ? 'Ocultar sidebar' : 'Mostrar sidebar'}
+      >
+        <Menu className="w-5 h-5" />
+      </button>
+      
       <main className="flex-1 overflow-auto relative">
-        <button
-          onClick={toggleSidebar}
-          className="fixed top-4 left-4 z-50 p-2 bg-white border border-gray-300 rounded-lg shadow-md hover:bg-gray-50 transition-colors"
-          title={isSidebarVisible ? 'Ocultar sidebar' : 'Mostrar sidebar'}
-        >
-          <Menu className="w-5 h-5" />
-        </button>
         {currentPage === 'contactos' && (
           <ContactsPage
             contacts={filteredContacts}
