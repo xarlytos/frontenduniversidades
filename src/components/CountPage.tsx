@@ -5,6 +5,7 @@ import universidadesService, { UniversidadConEstadisticas } from '../services/un
 import { schoolsMapping, schoolOrder, getSchoolForTitulation } from '../data/schoolsData';
 import { User } from '../types/auth';
 import { useAuth } from '../hooks/useAuth';
+import { usePermissions } from '../hooks/usePermissions';
 
 interface CountPageProps {
   onNavigateToContacts: (filters: any) => void;
@@ -22,6 +23,7 @@ export default function CountPage({ onNavigateToContacts, currentUser }: CountPa
   const [loadingComerciales, setLoadingComerciales] = useState<boolean>(false);
 
   const { getAllUsers } = useAuth();
+  const { getJefeSubordinados } = usePermissions();
 
   // Agregar logs para debugging
   console.log('🎯 CountPage - Filtros actuales:', { selectedUniversidad, selectedCurso });
@@ -105,17 +107,36 @@ export default function CountPage({ onNavigateToContacts, currentUser }: CountPa
     return contacts;
   }, [allUniversidades]);
 
+  // Función para obtener todos los comerciales visibles (incluyendo subordinados)
+  const getComercialVisibles = useMemo(() => {
+    if (!selectedComercial) return [];
+    
+    // Obtener subordinados del comercial seleccionado
+    const subordinados = getJefeSubordinados(selectedComercial);
+    const comercialesVisibles = [selectedComercial, ...subordinados];
+    
+    console.log(`👥 Comerciales visibles para ${selectedComercial}:`, comercialesVisibles);
+    return comercialesVisibles;
+  }, [selectedComercial, getJefeSubordinados]);
+
   const filteredContacts = useMemo(() => {
     const filtered = allContacts.filter(contact => {
       const matchesUniversidad = !selectedUniversidad || contact.universidad === selectedUniversidad;
       const matchesCurso = !selectedCurso || contact.curso?.toString() === selectedCurso;
-      const matchesComercial = !selectedComercial || contact.comercial_id === selectedComercial;
+      
+      // MODIFICACIÓN: Incluir contactos de subordinados
+      let matchesComercial = true;
+      if (selectedComercial) {
+        const comercialesVisibles = getComercialVisibles;
+        matchesComercial = comercialesVisibles.includes(contact.comercial_id);
+      }
+      
       return matchesUniversidad && matchesCurso && matchesComercial;
     });
     
-    console.log('🔍 Contactos filtrados:', filtered.length, filtered);
+    console.log('🔍 Contactos filtrados (incluyendo subordinados):', filtered.length, filtered);
     return filtered;
-  }, [allContacts, selectedUniversidad, selectedCurso, selectedComercial]);
+  }, [allContacts, selectedUniversidad, selectedCurso, selectedComercial, getComercialVisibles]);
 
   // NUEVO: Calcular estadísticas incluyendo TODAS las universidades disponibles
   // Actualizar universityStats
@@ -136,7 +157,13 @@ export default function CountPage({ onNavigateToContacts, currentUser }: CountPa
       if (stats[contact.universidad]) {
         const matchesUniversidad = !selectedUniversidad || contact.universidad === selectedUniversidad;
         const matchesCurso = !selectedCurso || contact.curso?.toString() === selectedCurso;
-        const matchesComercial = !selectedComercial || contact.comercial_id === selectedComercial;
+        
+        // MODIFICACIÓN: Incluir contactos de subordinados
+        let matchesComercial = true;
+        if (selectedComercial) {
+          const comercialesVisibles = getComercialVisibles;
+          matchesComercial = comercialesVisibles.includes(contact.comercial_id);
+        }
         
         if (matchesUniversidad && matchesCurso && matchesComercial) {
           stats[contact.universidad].total++;
@@ -152,9 +179,9 @@ export default function CountPage({ onNavigateToContacts, currentUser }: CountPa
       return a.universidad.localeCompare(b.universidad); // Luego alfabéticamente
     });
     
-    console.log('📊 Estadísticas por universidad (incluyendo filtro comercial):', result);
+    console.log('📊 Estadísticas por universidad (incluyendo subordinados):', result);
     return result;
-  }, [allUniversidades, allContacts, selectedUniversidad, selectedCurso, selectedComercial]);
+  }, [allUniversidades, allContacts, selectedUniversidad, selectedCurso, selectedComercial, getComercialVisibles]);
 
   // NUEVO: Calcular estadísticas de titulación incluyendo TODAS las titulaciones disponibles
   const titulationStats = useMemo(() => {
@@ -206,7 +233,7 @@ export default function CountPage({ onNavigateToContacts, currentUser }: CountPa
       return b.total - a.total;
     });
     
-    console.log('🎓 Estadísticas por titulación (incluyendo vacías):', result);
+    console.log('🎓 Estadísticas por titulación (incluyendo subordinados):', result);
     return result;
   }, [allUniversidades, allContacts, selectedUniversidad, selectedCurso]);
 
