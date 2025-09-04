@@ -46,6 +46,33 @@ export default function CountPage({ onNavigateToContacts, currentUser }: CountPa
     fetchAllUniversidades();
   }, []);
 
+  // Cargar comerciales si el usuario es admin
+  useEffect(() => {
+    const fetchComerciales = async () => {
+      if (currentUser?.role?.toLowerCase() === 'admin') {
+        try {
+          setLoadingComerciales(true);
+          console.log('🔄 Cargando comerciales para admin...');
+          const users = await getAllUsers();
+          console.log('👥 Usuarios obtenidos:', users);
+          const comercialesOnly = users.filter(user => user.role === 'comercial');
+          console.log('💼 Comerciales filtrados:', comercialesOnly);
+          setComerciales(comercialesOnly);
+        } catch (error) {
+          console.error('❌ Error cargando comerciales:', error);
+          setComerciales([]);
+        } finally {
+          setLoadingComerciales(false);
+        }
+      } else {
+        console.log('👤 Usuario no es admin, no se cargan comerciales');
+        setComerciales([]);
+      }
+    };
+
+    fetchComerciales();
+  }, [currentUser, getAllUsers]);
+
   // Extraer todos los contactos de la estructura anidada
   const allContacts = useMemo(() => {
     const contacts: Contact[] = [];
