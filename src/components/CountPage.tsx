@@ -582,24 +582,3 @@ export default function CountPage({ onNavigateToContacts, currentUser }: CountPa
     </div>
   );
 }
-
-  // Cargar comerciales si el usuario es admin
-  useEffect(() => {
-    const fetchComerciales = async () => {
-      if (currentUser?.role?.toLowerCase() === 'admin') {
-        try {
-          setLoadingComerciales(true);
-          const users = await getAllUsers();
-          const comercialesOnly = users.filter(user => user.role === 'comercial');
-          setComerciales(comercialesOnly);
-        } catch (error) {
-          console.error('❌ Error cargando comerciales:', error);
-          setComerciales([]);
-        } finally {
-          setLoadingComerciales(false);
-        }
-      }
-    };
-
-    fetchComerciales();
-  }, [currentUser, getAllUsers]);
