@@ -6,6 +6,7 @@ import { schoolsMapping, schoolOrder, getSchoolForTitulation } from '../data/sch
 import { User } from '../types/auth';
 import { useAuth } from '../hooks/useAuth';
 import { usePermissions } from '../hooks/usePermissions';
+import { useContacts } from '../hooks/useContacts';
 
 interface CountPageProps {
   onNavigateToContacts: (filters: any) => void;
@@ -24,6 +25,9 @@ export default function CountPage({ onNavigateToContacts, currentUser }: CountPa
 
   const { getAllUsers } = useAuth();
   const { getJefeSubordinados } = usePermissions();
+  const { contacts: allContacts } = useContacts(); // ✅ USAR LOS CONTACTOS DEL HOOK
+
+  console.log('🎯 CountPage - Contactos del hook:', allContacts.length, allContacts);
 
   // Agregar logs para debugging
   console.log('🎯 CountPage - Filtros actuales:', { selectedUniversidad, selectedCurso });
