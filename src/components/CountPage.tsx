@@ -136,8 +136,13 @@ export default function CountPage({ onNavigateToContacts, currentUser }: CountPa
 
   // Función para obtener todos los comerciales visibles (incluyendo subordinados)
   const getComercialVisibles = useMemo(() => {
+    // Si no hay comercial seleccionado Y el usuario es admin, mostrar todos
     if (!selectedComercial) {
-      console.log('🚫 No hay comercial seleccionado');
+      if (currentUser?.role?.toLowerCase() === 'admin') {
+        console.log('👑 Admin sin filtro de comercial - mostrando todos los contactos');
+        return null; // null significa "sin filtro"
+      }
+      console.log('🚫 No hay comercial seleccionado y no es admin');
       return [];
     }
     
@@ -148,7 +153,7 @@ export default function CountPage({ onNavigateToContacts, currentUser }: CountPa
     console.log(`👥 Comerciales visibles para ${selectedComercial}:`, comercialesVisibles);
     console.log('🔍 Subordinados encontrados:', subordinados);
     return comercialesVisibles;
-  }, [selectedComercial, getJefeSubordinados]);
+  }, [selectedComercial, getJefeSubordinados, currentUser]);
 
   const filteredContacts = useMemo(() => {
     console.log('🎯 Iniciando filtrado de contactos...');
