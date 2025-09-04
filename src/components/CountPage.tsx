@@ -522,7 +522,15 @@ export default function CountPage({ onNavigateToContacts, currentUser }: CountPa
               return null;
             }
             
-            const titulacionesUniversidad = universidadData?.titulaciones || [];
+            // CORRECCIÓN: Obtener titulaciones de titulationStats en lugar de universidadData
+            const titulacionesStats = titulationStats.filter(stat => stat.universidad === universidad);
+            const titulacionesNombres = titulacionesStats.map(stat => stat.titulacion);
+            
+            // Filtrar titulaciones de universidadData que también existen en titulationStats
+            const titulacionesUniversidad = universidadData?.titulaciones.filter(tit => 
+              titulacionesNombres.includes(tit.nombre)
+            ) || [];
+            
             // Crear ID único para la universidad
             const universidadId = universidad.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
             
@@ -616,25 +624,42 @@ export default function CountPage({ onNavigateToContacts, currentUser }: CountPa
                         {/* Filas de titulaciones de esta rama */}
                         <div className="divide-y divide-gray-100">
                           {titulacionesRama.map((titulacion, index) => {
-                            const totalAlumnosTitulacion = titulacion.totalAlumnos || 0;
+                            // CORRECCIÓN: Buscar datos de esta titulación en titulationStats
+                            const titulacionStat = titulationStats.find(stat => 
+                              stat.universidad === universidad && stat.titulacion === titulacion.nombre
+                            );
                             
-                            // Calcular alumnos por curso
+                            // Usar datos de titulacionStat si existen, o los datos originales si no
+                            const totalAlumnosTitulacion = titulacionStat?.total || titulacion.totalAlumnos || 0;
+                            const porCurso = titulacionStat?.porCurso || {};
+                            
+                            // Calcular alumnos por curso usando titulacionStat
                             const alumnosPorCurso: Record<number, number> = {};
-                            titulacion.cursos?.forEach(curso => {
-                              alumnosPorCurso[parseInt(curso.curso)] = curso.totalAlumnos || 0;
-                            });
+                            if (titulacionStat) {
+                              // Usar datos de titulationStats
+                              Object.entries(porCurso).forEach(([curso, cantidad]) => {
+                                alumnosPorCurso[parseInt(curso)] = cantidad;
+                              });
+                            } else {
+                              // Fallback a los datos originales
+                              titulacion.cursos?.forEach(curso => {
+                                alumnosPorCurso[parseInt(curso.curso)] = curso.totalAlumnos || 0;
+                              });
+                            }
                             
                             // Calcular comerciales por titulación
-                            const comercialesPorTitulacion: Record<string, number> = {};
-                            titulacion.cursos?.forEach(curso => {
-                              if (curso.alumnos && Array.isArray(curso.alumnos)) {
-                                curso.alumnos.forEach(alumno => {
-                                  const nombreComercial = alumno.comercialNombre || 'Sin asignar';
-                                  comercialesPorTitulacion[nombreComercial] = (comercialesPorTitulacion[nombreComercial] || 0) + 1;
-                                });
-                              }
-                            });
-                            
+                            const comercialesPorTitulacion: Record<string, number> = titulacionStat?.porComercial || {};
+                            if (!titulacionStat && titulacion.cursos) {
+                              // Fallback a los datos originales
+                              titulacion.cursos.forEach(curso => {
+                                if (curso.alumnos && Array.isArray(curso.alumnos)) {
+                                  curso.alumnos.forEach(alumno => {
+                                    const nombreComercial = alumno.comercialNombre || 'Sin asignar';
+                                    comercialesPorTitulacion[nombreComercial] = (comercialesPorTitulacion[nombreComercial] || 0) + 1;
+                                  });
+                                }
+                              });
+                            }
                             return (
                               <div key={`${universidad}-${rama}-${titulacion.nombre}`} className="px-6 py-3 hover:bg-gray-50">
                                 <div className="grid grid-cols-12 gap-4 items-center">
