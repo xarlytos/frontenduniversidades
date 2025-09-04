@@ -160,23 +160,24 @@ export default function CountPage({ onNavigateToContacts, currentUser }: CountPa
     console.log('📊 Total contactos disponibles:', allContacts.length);
     console.log('🔧 Filtros activos:', { selectedUniversidad, selectedCurso, selectedComercial });
     
+    // En filteredContacts (línea ~160)
     const filtered = allContacts.filter(contact => {
-      const matchesUniversidad = !selectedUniversidad || contact.universidad === selectedUniversidad;
-      const matchesCurso = !selectedCurso || contact.curso?.toString() === selectedCurso;
-      
-      // CORRECCIÓN: Usar el valor del useMemo directamente
-      let matchesComercial = true;
-      if (selectedComercial) {
-        console.log(`🔍 Verificando contacto ${contact.nombre} - comercial_id: ${contact.comercial_id}`);
-        console.log('👥 Comerciales visibles:', getComercialVisibles);
-        matchesComercial = getComercialVisibles.includes(contact.comercial_id);
-        console.log(`✅ Coincide comercial: ${matchesComercial}`);
-      }
-      
-      const matches = matchesUniversidad && matchesCurso && matchesComercial;
-      console.log(`📋 Contacto ${contact.nombre}: Universidad(${matchesUniversidad}) + Curso(${matchesCurso}) + Comercial(${matchesComercial}) = ${matches}`);
-      
-      return matches;
+    const matchesUniversidad = !selectedUniversidad || contact.universidad === selectedUniversidad;
+    const matchesCurso = !selectedCurso || contact.curso?.toString() === selectedCurso;
+    
+    // CORRECCIÓN: Manejar cuando getComercialVisibles es null (admin sin filtro)
+    let matchesComercial = true;
+    if (selectedComercial && getComercialVisibles !== null) {
+    console.log(`🔍 Verificando contacto ${contact.nombre} - comercial_id: ${contact.comercial_id}`);
+    console.log('👥 Comerciales visibles:', getComercialVisibles);
+    matchesComercial = getComercialVisibles.includes(contact.comercial_id);
+    console.log(`✅ Coincide comercial: ${matchesComercial}`);
+    }
+    
+    const matches = matchesUniversidad && matchesCurso && matchesComercial;
+    console.log(`📋 Contacto ${contact.nombre}: Universidad(${matchesUniversidad}) + Curso(${matchesCurso}) + Comercial(${matchesComercial}) = ${matches}`);
+    
+    return matches;
     });
     
     console.log('🔍 Contactos filtrados (incluyendo subordinados):', filtered.length, filtered);
@@ -198,14 +199,15 @@ export default function CountPage({ onNavigateToContacts, currentUser }: CountPa
     });
     
     // Luego, contar contactos que coinciden con los filtros
+    // En universityStats (línea ~205)
     allContacts.forEach(contact => {
       if (stats[contact.universidad]) {
         const matchesUniversidad = !selectedUniversidad || contact.universidad === selectedUniversidad;
         const matchesCurso = !selectedCurso || contact.curso?.toString() === selectedCurso;
         
-        // MODIFICACIÓN: Incluir contactos de subordinados
+        // CORRECCIÓN: Manejar cuando getComercialVisibles es null
         let matchesComercial = true;
-        if (selectedComercial) {
+        if (selectedComercial && getComercialVisibles !== null) {
           matchesComercial = getComercialVisibles.includes(contact.comercial_id);
         }
         
@@ -271,10 +273,11 @@ export default function CountPage({ onNavigateToContacts, currentUser }: CountPa
         const matchesCursoFilter = !selectedCurso || contact.curso?.toString() === selectedCurso;
         
         // AGREGAR: Filtro por comercial (incluyendo subordinados)
-        let matchesComercial = true;
-        if (selectedComercial) {
-          matchesComercial = getComercialVisibles.includes(contact.comercial_id);
-        }
+        // CORRECCIÓN: Filtro por comercial (incluyendo subordinados)
+let matchesComercial = true;
+if (selectedComercial && getComercialVisibles !== null) {
+  matchesComercial = getComercialVisibles.includes(contact.comercial_id);
+}
         
         if (matchesUniversidadFilter && matchesCursoFilter && matchesComercial) {
           stats[key].total++;
