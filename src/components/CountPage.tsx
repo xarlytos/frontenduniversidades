@@ -272,12 +272,11 @@ export default function CountPage({ onNavigateToContacts, currentUser }: CountPa
         const matchesUniversidadFilter = !selectedUniversidad || contact.universidad === selectedUniversidad;
         const matchesCursoFilter = !selectedCurso || contact.curso?.toString() === selectedCurso;
         
-        // AGREGAR: Filtro por comercial (incluyendo subordinados)
         // CORRECCIÓN: Filtro por comercial (incluyendo subordinados)
-let matchesComercial = true;
-if (selectedComercial && getComercialVisibles !== null) {
-  matchesComercial = getComercialVisibles.includes(contact.comercial_id);
-}
+        let matchesComercial = true;
+        if (selectedComercial && getComercialVisibles !== null) {
+          matchesComercial = getComercialVisibles.includes(contact.comercial_id);
+        }
         
         if (matchesUniversidadFilter && matchesCursoFilter && matchesComercial) {
           stats[key].total++;
@@ -313,7 +312,7 @@ if (selectedComercial && getComercialVisibles !== null) {
     
     console.log('🎓 Estadísticas por titulación (incluyendo subordinados):', result);
     return result;
-  }, [allUniversidades, allContacts, selectedUniversidad, selectedCurso]);
+  }, [allUniversidades, allContacts, selectedUniversidad, selectedCurso, selectedComercial, getComercialVisibles]);
 
   const totalContacts = filteredContacts.length;
   const totalUniversidades = estadisticasGenerales?.totalUniversidades || allUniversidades.length;
