@@ -298,7 +298,7 @@ export default function CountPage({ onNavigateToContacts, currentUser }: CountPa
       } else {
         // AGREGAR LOG CUANDO NO SE ENCUENTRA LA CLAVE
         if (contact.nombre === 'Candela') {
-          console.log('❌ Candela: Clave no encontrada en stats:', key);
+          console.log('❌ Candela NO encontrada en stats. Clave:', key);
         }
       }
     });
@@ -511,7 +511,7 @@ export default function CountPage({ onNavigateToContacts, currentUser }: CountPa
           )}
         </h2>
         
-        {/* Agrupar por universidad */}
+        // Agrupar por universidad
         {[...new Set(titulationStats.map(stat => stat.universidad))]
           .sort()
           .map(universidad => {
