@@ -77,33 +77,56 @@ export default function CountPage({ onNavigateToContacts, currentUser }: CountPa
 
   // Extraer todos los contactos de la estructura anidada
   const allContacts = useMemo(() => {
+    console.log('🔍 Estructura de allUniversidades:', allUniversidades);
+    console.log('📊 Número de universidades:', allUniversidades.length);
+    
     const contacts: Contact[] = [];
     
-    allUniversidades.forEach(universidad => {
-      universidad.titulaciones.forEach(titulacion => {
-        titulacion.cursos.forEach(curso => {
-          curso.alumnos.forEach(alumno => {
-            contacts.push({
-              id: alumno._id,
-              nombre: alumno.nombreCompleto,
-              telefono: alumno.telefono,
-              instagram: alumno.instagram,
-              universidad: universidad.nombre,
-              universidadId: universidad.id,
-              titulacion: titulacion.nombre,
-              titulacionId: titulacion._id,
-              curso: parseInt(curso.curso),
-              año_nacimiento: alumno.anioNacimiento,
-              fecha_alta: alumno.fechaAlta,
-              comercial_id: alumno.comercialId,
-              comercial_nombre: '', // Este campo no está en la estructura actual
-              comercial: alumno.comercialId
+    allUniversidades.forEach((universidad, uniIndex) => {
+      console.log(`🏫 Universidad ${uniIndex}:`, universidad.nombre, 'Titulaciones:', universidad.titulaciones?.length || 0);
+      
+      if (universidad.titulaciones) {
+        universidad.titulaciones.forEach((titulacion, titIndex) => {
+          console.log(`  📚 Titulación ${titIndex}:`, titulacion.nombre, 'Cursos:', titulacion.cursos?.length || 0);
+          
+          if (titulacion.cursos) {
+            titulacion.cursos.forEach((curso, cursoIndex) => {
+              console.log(`    📖 Curso ${cursoIndex}:`, curso.curso, 'Alumnos:', curso.alumnos?.length || 0);
+              
+              if (curso.alumnos) {
+                curso.alumnos.forEach(alumno => {
+                  console.log(`      👤 Alumno:`, alumno.nombreCompleto, 'ComercialId:', alumno.comercialId);
+                  contacts.push({
+                    id: alumno._id,
+                    nombre: alumno.nombreCompleto,
+                    telefono: alumno.telefono,
+                    instagram: alumno.instagram,
+                    universidad: universidad.nombre,
+                    universidadId: universidad.id,
+                    titulacion: titulacion.nombre,
+                    titulacionId: titulacion._id,
+                    curso: parseInt(curso.curso),
+                    año_nacimiento: alumno.anioNacimiento,
+                    fecha_alta: alumno.fechaAlta,
+                    comercial_id: alumno.comercialId,
+                    comercial_nombre: '', // Este campo no está en la estructura actual
+                    comercial: alumno.comercialId
+                  });
+                });
+              } else {
+                console.log(`      ❌ No hay alumnos en curso ${curso.curso}`);
+              }
             });
-          });
+          } else {
+            console.log(`    ❌ No hay cursos en titulación ${titulacion.nombre}`);
+          }
         });
-      });
+      } else {
+        console.log(`  ❌ No hay titulaciones en universidad ${universidad.nombre}`);
+      }
     });
     
+    console.log('📊 Total contactos extraídos:', contacts.length);
     return contacts;
   }, [allUniversidades]);
 
