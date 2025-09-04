@@ -165,6 +165,7 @@ export class ContactosController {
   // POST /contactos
   static async crearContacto(req: AuthRequest, res: Response) {
     try {
+      // Resolver conflicto en la extracción de campos
       const {
         universidadId,
         titulacionId,
@@ -173,12 +174,8 @@ export class ContactosController {
         telefono,
         instagram,
         anioNacimiento,
-<<<<<<< HEAD
-        comercialId
-=======
         comercialId,
-        diaLibre // ← Añadir este campo
->>>>>>> bf45d40fa4fabf29558599d282ad215695430deb
+        diaLibre // ← Mantener este campo
       } = req.body;
 
       // Validaciones
@@ -198,12 +195,8 @@ export class ContactosController {
         instagram,
         anioNacimiento,
         comercialId: comercialId || req.user!.userId,
-<<<<<<< HEAD
-        createdBy: req.user!.userId
-=======
         createdBy: req.user!.userId,
-        diaLibre // ← Añadir este campo
->>>>>>> bf45d40fa4fabf29558599d282ad215695430deb
+        diaLibre // ← Mantener este campo
       });
 
       await nuevoContacto.save();

@@ -104,6 +104,11 @@ export default function ContactDetail({ contact, onClose, onEdit }: ContactDetai
               </div>
 
               <div>
+                <span className="font-medium text-gray-700">Día Libre</span>
+                <p className="text-gray-900">{contact.dia_libre || 'N/D'}</p>
+              </div>
+
+              <div>
                 <div className="flex items-center space-x-2 mb-2">
                   <Calendar className="w-4 h-4 text-gray-500" />
                   <span className="font-medium text-gray-700">Fecha de Alta</span>

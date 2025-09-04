@@ -3,17 +3,25 @@ import { BarChart3, Users, Filter, ArrowRight } from 'lucide-react';
 import { Contact, UniversityStats, TitulationStats } from '../types';
 import universidadesService, { UniversidadConEstadisticas } from '../services/universidadesService';
 import { schoolsMapping, schoolOrder, getSchoolForTitulation } from '../data/schoolsData';
+import { User } from '../types/auth';
+import { useAuth } from '../hooks/useAuth';
 
 interface CountPageProps {
   onNavigateToContacts: (filters: any) => void;
+  currentUser: User | null;
 }
 
-export default function CountPage({ onNavigateToContacts }: CountPageProps) {
+export default function CountPage({ onNavigateToContacts, currentUser }: CountPageProps) {
   const [selectedUniversidad, setSelectedUniversidad] = useState<string>('');
   const [selectedCurso, setSelectedCurso] = useState<string>('');
+  const [selectedComercial, setSelectedComercial] = useState<string>('');
   const [allUniversidades, setAllUniversidades] = useState<UniversidadConEstadisticas[]>([]);
   const [loadingUniversidades, setLoadingUniversidades] = useState<boolean>(true);
   const [estadisticasGenerales, setEstadisticasGenerales] = useState<any>(null);
+  const [comerciales, setComerciales] = useState<User[]>([]);
+  const [loadingComerciales, setLoadingComerciales] = useState<boolean>(false);
+
+  const { getAllUsers } = useAuth();
 
   // Agregar logs para debugging
   console.log('🎯 CountPage - Filtros actuales:', { selectedUniversidad, selectedCurso });
@@ -74,14 +82,16 @@ export default function CountPage({ onNavigateToContacts }: CountPageProps) {
     const filtered = allContacts.filter(contact => {
       const matchesUniversidad = !selectedUniversidad || contact.universidad === selectedUniversidad;
       const matchesCurso = !selectedCurso || contact.curso?.toString() === selectedCurso;
-      return matchesUniversidad && matchesCurso;
+      const matchesComercial = !selectedComercial || contact.comercial_id === selectedComercial;
+      return matchesUniversidad && matchesCurso && matchesComercial;
     });
     
     console.log('🔍 Contactos filtrados:', filtered.length, filtered);
     return filtered;
-  }, [allContacts, selectedUniversidad, selectedCurso]);
+  }, [allContacts, selectedUniversidad, selectedCurso, selectedComercial]);
 
   // NUEVO: Calcular estadísticas incluyendo TODAS las universidades disponibles
+  // Actualizar universityStats
   const universityStats = useMemo(() => {
     const stats: Record<string, UniversityStats> = {};
     
@@ -99,8 +109,9 @@ export default function CountPage({ onNavigateToContacts }: CountPageProps) {
       if (stats[contact.universidad]) {
         const matchesUniversidad = !selectedUniversidad || contact.universidad === selectedUniversidad;
         const matchesCurso = !selectedCurso || contact.curso?.toString() === selectedCurso;
+        const matchesComercial = !selectedComercial || contact.comercial_id === selectedComercial;
         
-        if (matchesUniversidad && matchesCurso) {
+        if (matchesUniversidad && matchesCurso && matchesComercial) {
           stats[contact.universidad].total++;
         }
       }
@@ -114,9 +125,9 @@ export default function CountPage({ onNavigateToContacts }: CountPageProps) {
       return a.universidad.localeCompare(b.universidad); // Luego alfabéticamente
     });
     
-    console.log('📊 Estadísticas por universidad (incluyendo vacías):', result);
+    console.log('📊 Estadísticas por universidad (incluyendo filtro comercial):', result);
     return result;
-  }, [allUniversidades, allContacts, selectedUniversidad, selectedCurso]);
+  }, [allUniversidades, allContacts, selectedUniversidad, selectedCurso, selectedComercial]);
 
   // NUEVO: Calcular estadísticas de titulación incluyendo TODAS las titulaciones disponibles
   const titulationStats = useMemo(() => {
@@ -189,7 +200,8 @@ export default function CountPage({ onNavigateToContacts }: CountPageProps) {
       curso: selectedCurso,
       aportado_por: '',
       consentimiento: '',
-      search: ''
+      search: '',
+      comercial: selectedComercial
     });
   };
 
@@ -200,7 +212,8 @@ export default function CountPage({ onNavigateToContacts }: CountPageProps) {
       curso: selectedCurso,
       aportado_por: '',
       consentimiento: '',
-      search: ''
+      search: '',
+      comercial: selectedComercial
     });
   };
 
@@ -279,6 +292,26 @@ export default function CountPage({ onNavigateToContacts }: CountPageProps) {
               ))}
             </select>
           </div>
+
+          {/* Filtro de comerciales - Solo visible para admin */}
+          {currentUser?.role?.toLowerCase() === 'admin' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Comercial
+              </label>
+              <select
+                value={selectedComercial}
+                onChange={(e) => setSelectedComercial(e.target.value)}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                disabled={loadingComerciales}
+              >
+                <option value="">{loadingComerciales ? 'Cargando comerciales...' : 'Todos los comerciales'}</option>
+                {!loadingComerciales && comerciales.map(comercial => (
+                  <option key={comercial.id} value={comercial.id}>{comercial.nombre}</option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
       </div>
 
@@ -549,3 +582,24 @@ export default function CountPage({ onNavigateToContacts }: CountPageProps) {
     </div>
   );
 }
+
+  // Cargar comerciales si el usuario es admin
+  useEffect(() => {
+    const fetchComerciales = async () => {
+      if (currentUser?.role?.toLowerCase() === 'admin') {
+        try {
+          setLoadingComerciales(true);
+          const users = await getAllUsers();
+          const comercialesOnly = users.filter(user => user.role === 'comercial');
+          setComerciales(comercialesOnly);
+        } catch (error) {
+          console.error('❌ Error cargando comerciales:', error);
+          setComerciales([]);
+        } finally {
+          setLoadingComerciales(false);
+        }
+      }
+    };
+
+    fetchComerciales();
+  }, [currentUser, getAllUsers]);

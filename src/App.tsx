@@ -138,6 +138,7 @@ function App() {
         {currentPage === 'conteo' && (
           <CountPage
             onNavigateToContacts={handleNavigateToContacts}
+            currentUser={user}
           />
         )}
         

@@ -1,5 +1,6 @@
 import { Schema, model, Document, Types } from 'mongoose';
 
+// Resolver conflicto en la interfaz
 export interface IContacto extends Document {
   _id: string;
   universidadId: Types.ObjectId;
@@ -14,12 +15,10 @@ export interface IContacto extends Document {
   createdBy: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
-<<<<<<< HEAD
-=======
-  diaLibre?: string; // ← Añadir este campo
->>>>>>> bf45d40fa4fabf29558599d282ad215695430deb
+  diaLibre?: string; // ← Mantener este campo
 }
 
+// Resolver conflicto en el schema
 const contactoSchema = new Schema<IContacto>({
   universidadId: {
     type: Schema.Types.ObjectId,
@@ -74,14 +73,11 @@ const contactoSchema = new Schema<IContacto>({
     type: Schema.Types.ObjectId,
     ref: 'Usuario',
     required: true
-<<<<<<< HEAD
-=======
   },
   diaLibre: {
     type: String,
     enum: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'],
     required: false
->>>>>>> bf45d40fa4fabf29558599d282ad215695430deb
   }
 }, {
   timestamps: true
