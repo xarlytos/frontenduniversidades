@@ -231,6 +231,11 @@ export default function CountPage({ onNavigateToContacts, currentUser }: CountPa
       universidad.titulaciones.forEach(titulacion => {
         const key = `${universidad.nombre}-${titulacion.nombre}`;
         
+        // AGREGAR LOG PARA VER QUE TITULACIONES SE CREAN
+        if (universidad.nombre === 'FLORIDA') {
+          console.log('🏫 Creando entrada para FLORIDA:', key);
+        }
+        
         stats[key] = {
           titulacion: titulacion.nombre,
           universidad: universidad.nombre,
@@ -246,6 +251,16 @@ export default function CountPage({ onNavigateToContacts, currentUser }: CountPa
     allContacts.forEach(contact => {
       const key = `${contact.universidad}-${contact.titulacion}`;
       
+      // AGREGAR LOGS DE DEBUGGING
+      if (contact.nombre === 'Candela') {
+        console.log('🔍 DEBUGGING Candela:');
+        console.log('  - Clave generada:', key);
+        console.log('  - Universidad:', contact.universidad);
+        console.log('  - Titulación:', contact.titulacion);
+        console.log('  - ¿Existe en stats?:', !!stats[key]);
+        console.log('  - Claves disponibles en stats:', Object.keys(stats).filter(k => k.includes('FLORIDA')));
+      }
+      
       if (stats[key]) {
         const matchesUniversidadFilter = !selectedUniversidad || contact.universidad === selectedUniversidad;
         const matchesCursoFilter = !selectedCurso || contact.curso?.toString() === selectedCurso;
@@ -259,6 +274,11 @@ export default function CountPage({ onNavigateToContacts, currentUser }: CountPa
         if (matchesUniversidadFilter && matchesCursoFilter && matchesComercial) {
           stats[key].total++;
           
+          // AGREGAR LOG PARA CANDELA
+          if (contact.nombre === 'Candela') {
+            console.log('✅ Candela contada en estadísticas!');
+          }
+          
           // Contar por curso
           if (contact.curso) {
             stats[key].porCurso[contact.curso] = (stats[key].porCurso[contact.curso] || 0) + 1;
@@ -267,6 +287,11 @@ export default function CountPage({ onNavigateToContacts, currentUser }: CountPa
           // Contar por comercial
           const comercialNombre = contact.comercial_nombre || 'Sin asignar';
           stats[key].porComercial![comercialNombre] = (stats[key].porComercial![comercialNombre] || 0) + 1;
+        }
+      } else {
+        // AGREGAR LOG CUANDO NO SE ENCUENTRA LA CLAVE
+        if (contact.nombre === 'Candela') {
+          console.log('❌ Candela: Clave no encontrada en stats:', key);
         }
       }
     });
