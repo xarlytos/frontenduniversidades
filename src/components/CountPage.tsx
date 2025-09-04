@@ -124,11 +124,10 @@ export default function CountPage({ onNavigateToContacts, currentUser }: CountPa
       const matchesUniversidad = !selectedUniversidad || contact.universidad === selectedUniversidad;
       const matchesCurso = !selectedCurso || contact.curso?.toString() === selectedCurso;
       
-      // MODIFICACIÓN: Incluir contactos de subordinados
+      // CORRECCIÓN: Usar el valor del useMemo directamente
       let matchesComercial = true;
       if (selectedComercial) {
-        const comercialesVisibles = getComercialVisibles;
-        matchesComercial = comercialesVisibles.includes(contact.comercial_id);
+        matchesComercial = getComercialVisibles.includes(contact.comercial_id);
       }
       
       return matchesUniversidad && matchesCurso && matchesComercial;
@@ -161,8 +160,7 @@ export default function CountPage({ onNavigateToContacts, currentUser }: CountPa
         // MODIFICACIÓN: Incluir contactos de subordinados
         let matchesComercial = true;
         if (selectedComercial) {
-          const comercialesVisibles = getComercialVisibles;
-          matchesComercial = comercialesVisibles.includes(contact.comercial_id);
+          matchesComercial = getComercialVisibles.includes(contact.comercial_id);
         }
         
         if (matchesUniversidad && matchesCurso && matchesComercial) {
