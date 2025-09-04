@@ -510,8 +510,6 @@ export default function CountPage({ onNavigateToContacts, currentUser }: CountPa
             <span className="text-blue-600 font-normal"> - {selectedUniversidad}</span>
           )}
         </h2>
-        
-        // Agrupar por universidad
         {[...new Set(titulationStats.map(stat => stat.universidad))]
           .sort()
           .map(universidad => {
