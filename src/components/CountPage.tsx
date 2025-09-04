@@ -109,17 +109,25 @@ export default function CountPage({ onNavigateToContacts, currentUser }: CountPa
 
   // Función para obtener todos los comerciales visibles (incluyendo subordinados)
   const getComercialVisibles = useMemo(() => {
-    if (!selectedComercial) return [];
+    if (!selectedComercial) {
+      console.log('🚫 No hay comercial seleccionado');
+      return [];
+    }
     
     // Obtener subordinados del comercial seleccionado
     const subordinados = getJefeSubordinados(selectedComercial);
     const comercialesVisibles = [selectedComercial, ...subordinados];
     
     console.log(`👥 Comerciales visibles para ${selectedComercial}:`, comercialesVisibles);
+    console.log('🔍 Subordinados encontrados:', subordinados);
     return comercialesVisibles;
   }, [selectedComercial, getJefeSubordinados]);
 
   const filteredContacts = useMemo(() => {
+    console.log('🎯 Iniciando filtrado de contactos...');
+    console.log('📊 Total contactos disponibles:', allContacts.length);
+    console.log('🔧 Filtros activos:', { selectedUniversidad, selectedCurso, selectedComercial });
+    
     const filtered = allContacts.filter(contact => {
       const matchesUniversidad = !selectedUniversidad || contact.universidad === selectedUniversidad;
       const matchesCurso = !selectedCurso || contact.curso?.toString() === selectedCurso;
@@ -127,10 +135,16 @@ export default function CountPage({ onNavigateToContacts, currentUser }: CountPa
       // CORRECCIÓN: Usar el valor del useMemo directamente
       let matchesComercial = true;
       if (selectedComercial) {
+        console.log(`🔍 Verificando contacto ${contact.nombre} - comercial_id: ${contact.comercial_id}`);
+        console.log('👥 Comerciales visibles:', getComercialVisibles);
         matchesComercial = getComercialVisibles.includes(contact.comercial_id);
+        console.log(`✅ Coincide comercial: ${matchesComercial}`);
       }
       
-      return matchesUniversidad && matchesCurso && matchesComercial;
+      const matches = matchesUniversidad && matchesCurso && matchesComercial;
+      console.log(`📋 Contacto ${contact.nombre}: Universidad(${matchesUniversidad}) + Curso(${matchesCurso}) + Comercial(${matchesComercial}) = ${matches}`);
+      
+      return matches;
     });
     
     console.log('🔍 Contactos filtrados (incluyendo subordinados):', filtered.length, filtered);
