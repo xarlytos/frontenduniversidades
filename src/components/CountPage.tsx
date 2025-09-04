@@ -176,7 +176,7 @@ export default function CountPage({ onNavigateToContacts, currentUser }: CountPa
     
     console.log('🔍 Contactos filtrados (incluyendo subordinados):', filtered.length, filtered);
     return filtered;
-  }, [allContacts, selectedUniversidad, selectedCurso, selectedComercial, getComercialVisibles]);
+  }, [allUniversidades, allContacts, selectedUniversidad, selectedCurso, selectedComercial, getComercialVisibles]);
 
   // NUEVO: Calcular estadísticas incluyendo TODAS las universidades disponibles
   // Actualizar universityStats
@@ -250,7 +250,13 @@ export default function CountPage({ onNavigateToContacts, currentUser }: CountPa
         const matchesUniversidadFilter = !selectedUniversidad || contact.universidad === selectedUniversidad;
         const matchesCursoFilter = !selectedCurso || contact.curso?.toString() === selectedCurso;
         
-        if (matchesUniversidadFilter && matchesCursoFilter) {
+        // AGREGAR: Filtro por comercial (incluyendo subordinados)
+        let matchesComercial = true;
+        if (selectedComercial) {
+          matchesComercial = getComercialVisibles.includes(contact.comercial_id);
+        }
+        
+        if (matchesUniversidadFilter && matchesCursoFilter && matchesComercial) {
           stats[key].total++;
           
           // Contar por curso
