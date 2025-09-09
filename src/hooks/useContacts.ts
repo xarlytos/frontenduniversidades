@@ -8,17 +8,21 @@ export const useContacts = (shouldLoad: boolean = true) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Cargar contactos desde la API usando getAllContacts (sin paginación)
+  // Cargar contactos desde la API usando getContacts con límite alto para obtener todos
   const loadContacts = useCallback(async (filters?: ContactFilters & { page?: number; limit?: number }) => {
     try {
       setLoading(true);
       setError(null);
-      console.log('🔄 Loading ALL contacts (no pagination)');
-      const response = await contactsService.getAllContacts();
+      console.log('🔄 Loading contacts with high limit to get all');
+      // Usar un límite muy alto para obtener todos los contactos
+      const response = await contactsService.getContacts({ 
+        limit: 10000,
+        page: 1
+      });
       
       if (response.success && response.data) {
-        // Los contactos están en response.data.data según la estructura del backend
-        const contactsData = response.data.data || response.data;
+        // Los contactos pueden estar en response.data directamente o en response.data.data
+        const contactsData = Array.isArray(response.data) ? response.data : response.data.data;
         console.log('🔍 Raw API response data:', contactsData);
         console.log('📊 Total contacts received:', contactsData?.length || 0);
         
@@ -43,7 +47,7 @@ export const useContacts = (shouldLoad: boolean = true) => {
           
           console.log('📊 Contacts that will be filtered out:', filteredOutContacts.length);
           
-          // Mapear los contactos manualmente
+          // Mapear los contactos manualmente ya que getContacts no los mapea
           const mappedContacts = contactsData
           .filter((contact: any) => {
             // Filter out contacts that don't have essential fields
