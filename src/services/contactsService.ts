@@ -39,12 +39,12 @@ export class ContactsService {
 
   async getAllContacts(): Promise<ApiResponse<{ data: Contact[]; total: number; message: string }>> {
     try {
-      const response = await apiService.get<Contact[]>('/contactos/todos');
+      const response = await apiService.get<{ data: any[]; total: number; message: string }>('/contactos/todos');
       
       console.log('🔧 Procesando respuesta en contactsService:', response);
       
-      // Mapear los datos del backend al formato esperado por el frontend
-      if (response.success && Array.isArray(response.data)) {
+      // El backend devuelve { success: true, data: [contactos...], total: X, message: "..." }
+      if (response.success && response.data && Array.isArray(response.data)) {
         console.log('📋 Mapeando', response.data.length, 'contactos...');
         
         const mappedContacts = response.data.map((contact: any) => ({
@@ -73,7 +73,7 @@ export class ContactsService {
           success: true,
           data: {
             data: mappedContacts,
-            total: mappedContacts.length,
+            total: response.data.length,
             message: 'Contactos obtenidos exitosamente'
           }
         };
