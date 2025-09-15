@@ -1129,25 +1129,30 @@ export class UsuariosController {
       console.log('👥 Jerarquías encontradas:', jerarquias.length);
       
       // Mapear a formato del frontend
-      const jerarquiasMapeadas = jerarquias.map(jerarquia => ({
-        id: jerarquia._id.toString(),
-        jefe_id: jerarquia.jefeId._id.toString(),
-        comercial_id: jerarquia.subordinadoId._id.toString(),
-        asignado_por: 'sistema', // No tenemos esta info en el modelo actual
-        fecha_asignacion: jerarquia.createdAt.toISOString(),
-        jefe_info: {
-          id: jerarquia.jefeId._id.toString(),
-          nombre: jerarquia.jefeId.nombre,
-          email: jerarquia.jefeId.email,
-          rol: jerarquia.jefeId.rol
-        },
-        comercial_info: {
-          id: jerarquia.subordinadoId._id.toString(),
-          nombre: jerarquia.subordinadoId.nombre,
-          email: jerarquia.subordinadoId.email,
-          rol: jerarquia.subordinadoId.rol
-        }
-      }));
+      const jerarquiasMapeadas = jerarquias.map(jerarquia => {
+        const jefe = jerarquia.jefeId as any;
+        const comercial = jerarquia.subordinadoId as any;
+        
+        return {
+          id: jerarquia._id.toString(),
+          jefe_id: jefe._id.toString(),
+          comercial_id: comercial._id.toString(),
+          asignado_por: 'sistema', // No tenemos esta info en el modelo actual
+          fecha_asignacion: jerarquia.createdAt.toISOString(),
+          jefe_info: {
+            id: jefe._id.toString(),
+            nombre: jefe.nombre,
+            email: jefe.email,
+            rol: jefe.rol
+          },
+          comercial_info: {
+            id: comercial._id.toString(),
+            nombre: comercial.nombre,
+            email: comercial.email,
+            rol: comercial.rol
+          }
+        };
+      });
       
       console.log('📤 Respuesta enviada:', {
         success: true,

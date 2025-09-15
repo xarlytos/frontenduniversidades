@@ -37,6 +37,18 @@ export interface ComercialHierarchy {
   comercial_id: string;
   asignado_por: string;
   fecha_asignacion: string;
+  jefe_info?: {
+    id: string;
+    nombre: string;
+    email: string;
+    rol: string;
+  };
+  comercial_info?: {
+    id: string;
+    nombre: string;
+    email: string;
+    rol: string;
+  };
 }
 
 export interface ContactWithOwner extends Contact {

@@ -78,11 +78,15 @@ export function usePermissions() {
       try {
         console.log('🔄 Cargando jerarquías desde el backend...');
         const response = await getJerarquias();
-        if (response.success && response.jerarquias) {
-          console.log('✅ Jerarquías cargadas desde backend:', response.jerarquias.length);
-          setHierarchies(response.jerarquias);
+        console.log('📥 Respuesta completa del backend:', response);
+        
+        if (response.success && response.data && response.data.jerarquias) {
+          console.log('✅ Jerarquías cargadas desde backend:', response.data.jerarquias.length);
+          console.log('📋 Datos de jerarquías:', response.data.jerarquias);
+          setHierarchies(response.data.jerarquias);
         } else {
           console.log('❌ Error cargando jerarquías:', response.error);
+          console.log('📋 Respuesta completa:', response);
         }
       } catch (error) {
         console.error('❌ Error cargando jerarquías:', error);
@@ -220,9 +224,9 @@ export function usePermissions() {
     try {
       console.log('🔄 Recargando jerarquías desde el backend...');
       const response = await getJerarquias();
-      if (response.success && response.jerarquias) {
-        console.log('✅ Jerarquías recargadas desde backend:', response.jerarquias.length);
-        setHierarchies(response.jerarquias);
+      if (response.success && response.data && response.data.jerarquias) {
+        console.log('✅ Jerarquías recargadas desde backend:', response.data.jerarquias.length);
+        setHierarchies(response.data.jerarquias);
         return true;
       } else {
         console.log('❌ Error recargando jerarquías:', response.error);
