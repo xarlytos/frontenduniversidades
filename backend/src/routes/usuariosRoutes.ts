@@ -79,6 +79,15 @@ router.put('/:id/permisos',
 );
 
 // Gestión de jerarquías
+router.get('/jerarquias', 
+  (req, res, next) => {
+    console.log('🔗 GET /usuarios/jerarquias - Obteniendo jerarquías');
+    next();
+  },
+  requirePermission('GESTIONAR_USUARIOS'), 
+  UsuariosController.obtenerJerarquias
+);
+
 router.post('/:id/asignar-jefe', 
   (req, res, next) => {
     console.log('🔗 POST /:id/asignar-jefe - Asignando jefe a usuario');

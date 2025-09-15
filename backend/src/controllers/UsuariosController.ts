@@ -17,7 +17,7 @@ export class UsuariosController {
         user: req.user ? { userId: req.user.userId, rol: req.user.rol } : 'No user'
       });
       
-      const { page = 1, limit = 10, search, rol, estado } = req.query;
+      const { page = 1, limit, search, rol, estado } = req.query;
       console.log('🔍 Parámetros de búsqueda:', { page, limit, search, rol, estado });
       
       const filter: any = {
@@ -36,11 +36,18 @@ export class UsuariosController {
       
       console.log('🎯 Filtro aplicado (solo COMERCIAL):', filter);
       
-      const usuarios = await Usuario.find(filter)
+      let query = Usuario.find(filter)
         .select('-passwordHash')
-        .limit(Number(limit) * 1)
-        .skip((Number(page) - 1) * Number(limit))
         .sort({ createdAt: -1 });
+      
+      // Solo aplicar limit y skip si se especifica un límite
+      if (limit) {
+        query = query
+          .limit(Number(limit) * 1)
+          .skip((Number(page) - 1) * Number(limit));
+      }
+      
+      const usuarios = await query;
 
       const total = await Usuario.countDocuments(filter);
       console.log('👥 Usuarios encontrados:', usuarios.length, 'de', total, 'total');
@@ -63,9 +70,9 @@ export class UsuariosController {
         usuarios: usuariosConPermisos,
         pagination: {
           page: Number(page),
-          limit: Number(limit),
+          limit: limit ? Number(limit) : total,
           total,
-          pages: Math.ceil(total / Number(limit))
+          pages: limit ? Math.ceil(total / Number(limit)) : 1
         }
       };
       
@@ -93,7 +100,7 @@ export class UsuariosController {
         user: req.user ? { userId: req.user.userId, rol: req.user.rol } : 'No user'
       });
       
-      const { page = 1, limit = 10, search, rol, estado } = req.query;
+      const { page = 1, limit, search, rol, estado } = req.query;
       console.log('🔍 Parámetros de búsqueda:', { page, limit, search, rol, estado });
       
       const filter: any = {};
@@ -110,11 +117,18 @@ export class UsuariosController {
       
       console.log('🎯 Filtro aplicado (todos los roles):', filter);
       
-      const usuarios = await Usuario.find(filter)
+      let query = Usuario.find(filter)
         .select('-passwordHash')
-        .limit(Number(limit) * 1)
-        .skip((Number(page) - 1) * Number(limit))
         .sort({ createdAt: -1 });
+      
+      // Solo aplicar limit y skip si se especifica un límite
+      if (limit) {
+        query = query
+          .limit(Number(limit) * 1)
+          .skip((Number(page) - 1) * Number(limit));
+      }
+      
+      const usuarios = await query;
 
       const total = await Usuario.countDocuments(filter);
       console.log('👥 Usuarios encontrados:', usuarios.length, 'de', total, 'total');
@@ -137,9 +151,9 @@ export class UsuariosController {
         usuarios: usuariosConPermisos,
         pagination: {
           page: Number(page),
-          limit: Number(limit),
+          limit: limit ? Number(limit) : total,
           total,
-          pages: Math.ceil(total / Number(limit))
+          pages: limit ? Math.ceil(total / Number(limit)) : 1
         }
       };
       
@@ -1083,6 +1097,69 @@ export class UsuariosController {
       
     } catch (error) {
       console.error('❌ Error asignando permisos básicos:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor'
+      });
+    }
+  }
+
+  // GET /usuarios/jerarquias - Obtener todas las jerarquías
+  static async obtenerJerarquias(req: AuthRequest, res: Response) {
+    try {
+      console.log('📥 obtenerJerarquias - Datos recibidos:', {
+        user: req.user ? { userId: req.user.userId, rol: req.user.rol } : 'No user'
+      });
+      
+      // Solo administradores pueden ver todas las jerarquías
+      if (req.user?.rol !== RolUsuario.ADMIN) {
+        console.log('❌ Sin permisos para ver jerarquías');
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permisos para ver las jerarquías'
+        });
+      }
+      
+      // Obtener todas las jerarquías con información de usuarios
+      const jerarquias = await JerarquiaUsuarios.find({})
+        .populate('subordinadoId', 'nombre email rol')
+        .populate('jefeId', 'nombre email rol')
+        .sort({ createdAt: -1 });
+      
+      console.log('👥 Jerarquías encontradas:', jerarquias.length);
+      
+      // Mapear a formato del frontend
+      const jerarquiasMapeadas = jerarquias.map(jerarquia => ({
+        id: jerarquia._id.toString(),
+        jefe_id: jerarquia.jefeId._id.toString(),
+        comercial_id: jerarquia.subordinadoId._id.toString(),
+        asignado_por: 'sistema', // No tenemos esta info en el modelo actual
+        fecha_asignacion: jerarquia.createdAt.toISOString(),
+        jefe_info: {
+          id: jerarquia.jefeId._id.toString(),
+          nombre: jerarquia.jefeId.nombre,
+          email: jerarquia.jefeId.email,
+          rol: jerarquia.jefeId.rol
+        },
+        comercial_info: {
+          id: jerarquia.subordinadoId._id.toString(),
+          nombre: jerarquia.subordinadoId.nombre,
+          email: jerarquia.subordinadoId.email,
+          rol: jerarquia.subordinadoId.rol
+        }
+      }));
+      
+      console.log('📤 Respuesta enviada:', {
+        success: true,
+        jerarquiasCount: jerarquiasMapeadas.length
+      });
+      
+      res.json({
+        success: true,
+        jerarquias: jerarquiasMapeadas
+      });
+    } catch (error) {
+      console.error('Error al obtener jerarquías:', error);
       res.status(500).json({
         success: false,
         message: 'Error interno del servidor'

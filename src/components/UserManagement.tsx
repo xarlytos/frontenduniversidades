@@ -69,7 +69,8 @@ export default function UserManagement({
     assignComercialToJefe,
     removeComercialFromJefe,
     getComercialJefe,
-    getJefeSubordinados
+    getJefeSubordinados,
+    reloadHierarchies
   } = usePermissions();
 
   // Cargar todos los usuarios para la gestión de permisos
@@ -318,6 +319,8 @@ export default function UserManagement({
           // Actualizar estado local solo si la petición fue exitosa
           assignComercialToJefe(comercialId, jefeId, currentUser.id);
           console.log(`👥 Comercial ${comercialId} asignado a jefe ${jefeId}`);
+          // Recargar jerarquías desde el backend para sincronizar
+          await reloadHierarchies();
         } else {
           console.error('❌ Error al asignar jefe:', response.error);
         }
@@ -328,6 +331,8 @@ export default function UserManagement({
           // Actualizar estado local solo si la petición fue exitosa
           removeComercialFromJefe(comercialId);
           console.log(`🗑️ Comercial ${comercialId} removido de jerarquía`);
+          // Recargar jerarquías desde el backend para sincronizar
+          await reloadHierarchies();
         } else {
           console.error('❌ Error al remover jefe:', response.error);
         }

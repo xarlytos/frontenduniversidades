@@ -99,6 +99,10 @@ export class UsersService {
   async removerJefe(subordinadoId: string): Promise<ApiResponse<{ message: string }>> {
     return apiService.delete<{ message: string }>(`/usuarios/${subordinadoId}/remover-jefe`);
   }
+
+  async getJerarquias(): Promise<ApiResponse<{ jerarquias: any[] }>> {
+    return apiService.get<{ jerarquias: any[] }>('/usuarios/jerarquias');
+  }
 }
 
 export const usersService = new UsersService();
@@ -116,3 +120,4 @@ export const updateUserPermissions = (id: string, permisos: string[]) => usersSe
 export const getUserPermissions = (id: string) => usersService.getUserPermissions(id);
 export const asignarJefe = (subordinadoId: string, usuarioId: string) => usersService.asignarJefe(subordinadoId, usuarioId);
 export const removerJefe = (subordinadoId: string) => usersService.removerJefe(subordinadoId);
+export const getJerarquias = () => usersService.getJerarquias();

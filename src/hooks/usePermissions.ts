@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Permission, ComercialHierarchy } from '../types/auth';
+import { getJerarquias } from '../services/usersService';
 
 const PERMISSIONS_STORAGE_KEY = 'commercial_permissions';
 const HIERARCHY_STORAGE_KEY = 'commercial_hierarchy';
@@ -59,6 +60,7 @@ const loadHierarchyFromStorage = (): ComercialHierarchy[] => {
 export function usePermissions() {
   const [permissions, setPermissions] = useState<Permission[]>(() => loadPermissionsFromStorage());
   const [hierarchies, setHierarchies] = useState<ComercialHierarchy[]>(() => loadHierarchyFromStorage());
+  const [loadingHierarchies, setLoadingHierarchies] = useState(false);
 
   // Save to localStorage whenever permissions or hierarchies change
   useEffect(() => {
@@ -68,6 +70,29 @@ export function usePermissions() {
   useEffect(() => {
     saveHierarchyToStorage(hierarchies);
   }, [hierarchies]);
+
+  // Cargar jerarquías desde el backend al inicializar
+  useEffect(() => {
+    const loadHierarchiesFromBackend = async () => {
+      setLoadingHierarchies(true);
+      try {
+        console.log('🔄 Cargando jerarquías desde el backend...');
+        const response = await getJerarquias();
+        if (response.success && response.jerarquias) {
+          console.log('✅ Jerarquías cargadas desde backend:', response.jerarquias.length);
+          setHierarchies(response.jerarquias);
+        } else {
+          console.log('❌ Error cargando jerarquías:', response.error);
+        }
+      } catch (error) {
+        console.error('❌ Error cargando jerarquías:', error);
+      } finally {
+        setLoadingHierarchies(false);
+      }
+    };
+
+    loadHierarchiesFromBackend();
+  }, []);
 
   // Nuevas funciones para gestión de jerarquía
   const assignComercialToJefe = useCallback((comercialId: string, jefeId: string, assignedBy: string) => {
@@ -189,9 +214,32 @@ export function usePermissions() {
     return permissions;
   }, [permissions]);
 
+  // Función para recargar jerarquías desde el backend
+  const reloadHierarchies = useCallback(async () => {
+    setLoadingHierarchies(true);
+    try {
+      console.log('🔄 Recargando jerarquías desde el backend...');
+      const response = await getJerarquias();
+      if (response.success && response.jerarquias) {
+        console.log('✅ Jerarquías recargadas desde backend:', response.jerarquias.length);
+        setHierarchies(response.jerarquias);
+        return true;
+      } else {
+        console.log('❌ Error recargando jerarquías:', response.error);
+        return false;
+      }
+    } catch (error) {
+      console.error('❌ Error recargando jerarquías:', error);
+      return false;
+    } finally {
+      setLoadingHierarchies(false);
+    }
+  }, []);
+
   return {
     permissions,
     hierarchies,
+    loadingHierarchies,
     grantPermission,
     revokePermission,
     hasPermission,
@@ -203,6 +251,7 @@ export function usePermissions() {
     assignComercialToJefe,
     removeComercialFromJefe,
     getComercialJefe,
-    getJefeSubordinados
+    getJefeSubordinados,
+    reloadHierarchies
   };
 }
