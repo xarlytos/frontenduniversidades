@@ -1,0 +1,55 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.env
+
+# Windows system files
+AppData/
+Contacts/
+Documents/
+Downloads/
+Favorites/
+Links/
+Music/
+Pictures/
+Saved Games/
+Searches/
+Videos/
+OneDrive/
+NTUSER.DAT*
+ntuser.dat*
+ntuser.ini
+desktop.ini
+
+# System shortcuts and files
+*.lnk
+*.url
+*.TM.blf
+*.TMContainer*
+*.regtrans-ms
+
+# Project specific
+.cursor/
+.gitconfig
+.lesshst
