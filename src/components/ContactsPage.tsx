@@ -226,31 +226,12 @@ export default function ContactsPage({
         pages.push(i);
       }
     } else {
-      // Lógica para páginas inteligentes
-      if (currentPage <= 4) {
-        // Mostrar primeras páginas: 1 2 3 4 5 6 7 ... última
-        for (let i = 1; i <= 6; i++) {
-          pages.push(i);
-        }
-        pages.push('...');
-        pages.push(totalPages);
-      } else if (currentPage >= totalPages - 3) {
-        // Mostrar últimas páginas: 1 ... penúltimas ... última
-        pages.push(1);
-        pages.push('...');
-        for (let i = totalPages - 5; i <= totalPages; i++) {
-          pages.push(i);
-        }
-      } else {
-        // Mostrar páginas centrales: 1 ... actual-2 actual-1 actual actual+1 actual+2 ... última
-        pages.push(1);
-        pages.push('...');
-        for (let i = currentPage - 2; i <= currentPage + 2; i++) {
-          pages.push(i);
-        }
-        pages.push('...');
-        pages.push(totalPages);
+      // Lógica para páginas inteligentes - siempre mostrar 1, 2, 3, 4, 5, 6, 7, ..., última
+      for (let i = 1; i <= 7; i++) {
+        pages.push(i);
       }
+      pages.push('...');
+      pages.push(totalPages);
     }
     
     return pages;
@@ -746,49 +727,36 @@ export default function ContactsPage({
                   </p>
                 </div>
                 
-                <div className="flex items-center space-x-2">
-                  {/* Input para salto directo (solo si hay más de 10 páginas) */}
-                  {totalPages > 10 && (
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm text-gray-700">Ir a página:</span>
-                      <input
-                        type="number"
-                        min="1"
-                        max={totalPages}
-                        value={jumpToPage}
-                        onChange={(e) => setJumpToPage(e.target.value)}
-                        onKeyPress={handleJumpKeyPress}
-                        placeholder="Número"
-                        className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                      <button
-                        onClick={handleJumpToPage}
-                        className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                      >
-                        Ir
-                      </button>
-                    </div>
-                  )}
+                <div className="flex items-center justify-between w-full">
+                  {/* Input para salto directo */}
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-gray-700">Ir a página:</span>
+                    <input
+                      type="number"
+                      min="1"
+                      max={totalPages}
+                      value={jumpToPage}
+                      onChange={(e) => setJumpToPage(e.target.value)}
+                      onKeyPress={handleJumpKeyPress}
+                      placeholder="Núm"
+                      className="w-12 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    <span className="text-sm text-gray-500">de {totalPages}</span>
+                    <button
+                      onClick={handleJumpToPage}
+                      className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                    >
+                      Ir
+                    </button>
+                  </div>
                   
                   {/* Navegación de páginas */}
-                  <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                    {/* Botón Primera página */}
-                    {currentPage > 4 && totalPages > 7 && (
-                      <button
-                        onClick={() => setCurrentPage(1)}
-                        className="relative inline-flex items-center px-3 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
-                      >
-                        1
-                      </button>
-                    )}
-                    
+                  <nav className="flex items-center space-x-1">
                     {/* Botón Anterior */}
                     <button
                       onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                       disabled={currentPage === 1}
-                      className={`relative inline-flex items-center px-3 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed ${
-                        currentPage <= 4 && totalPages > 7 ? 'rounded-l-md' : ''
-                      }`}
+                      className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-l-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Anterior
                     </button>
@@ -799,12 +767,12 @@ export default function ContactsPage({
                         key={index}
                         onClick={() => typeof page === 'number' && setCurrentPage(page)}
                         disabled={page === '...'}
-                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                        className={`px-3 py-2 text-sm font-medium border ${
                           page === currentPage
-                            ? 'z-10 bg-blue-600 border-blue-600 text-white'
+                            ? 'bg-blue-600 text-white border-blue-600'
                             : page === '...'
-                            ? 'bg-white border-gray-300 text-gray-500 cursor-default'
-                            : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                            ? 'bg-white text-gray-500 border-gray-300 cursor-default'
+                            : 'bg-white text-gray-500 border-gray-300 hover:bg-gray-50'
                         }`}
                       >
                         {page}
@@ -815,22 +783,10 @@ export default function ContactsPage({
                     <button
                       onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                       disabled={currentPage === totalPages}
-                      className={`relative inline-flex items-center px-3 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed ${
-                        currentPage >= totalPages - 3 && totalPages > 7 ? 'rounded-r-md' : ''
-                      }`}
+                      className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-r-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Siguiente
                     </button>
-                    
-                    {/* Botón Última página */}
-                    {currentPage < totalPages - 3 && totalPages > 7 && (
-                      <button
-                        onClick={() => setCurrentPage(totalPages)}
-                        className="relative inline-flex items-center px-3 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
-                      >
-                        {totalPages}
-                      </button>
-                    )}
                   </nav>
                 </div>
               </div>
