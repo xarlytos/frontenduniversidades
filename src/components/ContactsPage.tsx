@@ -67,6 +67,7 @@ export default function ContactsPage({
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedContacts, setSelectedContacts] = useState<Set<string>>(new Set());
   const [showImportModal, setShowImportModal] = useState(false);
+  const [jumpToPage, setJumpToPage] = useState('');
   const contactsPerPage = 10;
   
   // Hook de permisos
@@ -213,6 +214,63 @@ export default function ContactsPage({
   }, [filteredContacts, currentPage, contacts]);
 
   const totalPages = Math.ceil(filteredContacts.length / contactsPerPage);
+
+  // Función para generar páginas inteligentes (máximo 7 visibles)
+  const generatePageNumbers = () => {
+    const maxVisible = 7;
+    const pages: (number | string)[] = [];
+    
+    if (totalPages <= maxVisible) {
+      // Si hay 7 páginas o menos, mostrar todas
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // Lógica para páginas inteligentes
+      if (currentPage <= 4) {
+        // Mostrar primeras páginas: 1 2 3 4 5 6 7 ... última
+        for (let i = 1; i <= 6; i++) {
+          pages.push(i);
+        }
+        pages.push('...');
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 3) {
+        // Mostrar últimas páginas: 1 ... penúltimas ... última
+        pages.push(1);
+        pages.push('...');
+        for (let i = totalPages - 5; i <= totalPages; i++) {
+          pages.push(i);
+        }
+      } else {
+        // Mostrar páginas centrales: 1 ... actual-2 actual-1 actual actual+1 actual+2 ... última
+        pages.push(1);
+        pages.push('...');
+        for (let i = currentPage - 2; i <= currentPage + 2; i++) {
+          pages.push(i);
+        }
+        pages.push('...');
+        pages.push(totalPages);
+      }
+    }
+    
+    return pages;
+  };
+
+  // Función para manejar salto a página
+  const handleJumpToPage = () => {
+    const pageNumber = parseInt(jumpToPage);
+    if (pageNumber >= 1 && pageNumber <= totalPages) {
+      setCurrentPage(pageNumber);
+      setJumpToPage('');
+    }
+  };
+
+  // Función para manejar tecla Enter en el input
+  const handleJumpKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleJumpToPage();
+    }
+  };
 
   const handleFilterChange = (key: keyof ContactFilters, value: string) => {
     if (key === 'universidad') {
@@ -648,10 +706,11 @@ export default function ContactsPage({
           </table>
         </div>
 
-        {/* Paginación */}
+        {/* Paginación Inteligente */}
         {totalPages > 1 && (
           <div className="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
             <div className="flex items-center justify-between">
+              {/* Versión móvil - solo botones Anterior/Siguiente */}
               <div className="flex-1 flex justify-between sm:hidden">
                 <button
                   onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
@@ -660,14 +719,19 @@ export default function ContactsPage({
                 >
                   Anterior
                 </button>
+                <span className="text-sm text-gray-700 self-center">
+                  Página {currentPage} de {totalPages}
+                </span>
                 <button
                   onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                   disabled={currentPage === totalPages}
-                  className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Siguiente
                 </button>
               </div>
+              
+              {/* Versión desktop - paginación completa */}
               <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                 <div>
                   <p className="text-sm text-gray-700">
@@ -681,41 +745,98 @@ export default function ContactsPage({
                     <span className="font-medium">{filteredContacts.length}</span> resultados
                   </p>
                 </div>
-                <div>
+                
+                <div className="flex items-center space-x-2">
+                  {/* Input para salto directo (solo si hay más de 10 páginas) */}
+                  {totalPages > 10 && (
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-gray-700">Ir a página:</span>
+                      <input
+                        type="number"
+                        min="1"
+                        max={totalPages}
+                        value={jumpToPage}
+                        onChange={(e) => setJumpToPage(e.target.value)}
+                        onKeyPress={handleJumpKeyPress}
+                        placeholder="Número"
+                        className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                      <button
+                        onClick={handleJumpToPage}
+                        className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                      >
+                        Ir
+                      </button>
+                    </div>
+                  )}
+                  
+                  {/* Navegación de páginas */}
                   <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                    {/* Botón Primera página */}
+                    {currentPage > 4 && totalPages > 7 && (
                       <button
-                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                        disabled={currentPage === 1}
-                        className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={() => setCurrentPage(1)}
+                        className="relative inline-flex items-center px-3 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
                       >
-                        Anterior
+                        1
                       </button>
-                      {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                        <button
-                          key={page}
-                          onClick={() => setCurrentPage(page)}
-                          className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                            page === currentPage
-                              ? 'z-10 bg-blue-500 border-blue-500 text-blue-600'
-                              : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                          }`}
-                        >
-                          {page}
-                        </button>
-                      ))}
+                    )}
+                    
+                    {/* Botón Anterior */}
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                      className={`relative inline-flex items-center px-3 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed ${
+                        currentPage <= 4 && totalPages > 7 ? 'rounded-l-md' : ''
+                      }`}
+                    >
+                      Anterior
+                    </button>
+                    
+                    {/* Páginas inteligentes */}
+                    {generatePageNumbers().map((page, index) => (
                       <button
-                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                        disabled={currentPage === totalPages}
-                        className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        key={index}
+                        onClick={() => typeof page === 'number' && setCurrentPage(page)}
+                        disabled={page === '...'}
+                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                          page === currentPage
+                            ? 'z-10 bg-blue-600 border-blue-600 text-white'
+                            : page === '...'
+                            ? 'bg-white border-gray-300 text-gray-500 cursor-default'
+                            : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                        }`}
                       >
-                        Siguiente
+                        {page}
                       </button>
-                    </nav>
-                  </div>
+                    ))}
+                    
+                    {/* Botón Siguiente */}
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      disabled={currentPage === totalPages}
+                      className={`relative inline-flex items-center px-3 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed ${
+                        currentPage >= totalPages - 3 && totalPages > 7 ? 'rounded-r-md' : ''
+                      }`}
+                    >
+                      Siguiente
+                    </button>
+                    
+                    {/* Botón Última página */}
+                    {currentPage < totalPages - 3 && totalPages > 7 && (
+                      <button
+                        onClick={() => setCurrentPage(totalPages)}
+                        className="relative inline-flex items-center px-3 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+                      >
+                        {totalPages}
+                      </button>
+                    )}
+                  </nav>
                 </div>
               </div>
             </div>
-          )}
+          </div>
+        )}
         </div>
 
         {/* Modals */}
