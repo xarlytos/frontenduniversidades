@@ -68,6 +68,7 @@ export default function ContactsPage({
   const [selectedContacts, setSelectedContacts] = useState<Set<string>>(new Set());
   const [showImportModal, setShowImportModal] = useState(false);
   const [jumpToPage, setJumpToPage] = useState('');
+  const [jumpTimeout, setJumpTimeout] = useState<NodeJS.Timeout | null>(null);
   const contactsPerPage = 10;
   
   // Hook de permisos
@@ -95,6 +96,15 @@ export default function ContactsPage({
     
     checkDeletePermission();
   }, [currentUser, hasPermission]);
+
+  // Cleanup del timeout cuando el componente se desmonte
+  useEffect(() => {
+    return () => {
+      if (jumpTimeout) {
+        clearTimeout(jumpTimeout);
+      }
+    };
+  }, [jumpTimeout]);
   
   // Usar directamente los contactos que vienen por props
   const contacts = propContacts;
@@ -259,15 +269,60 @@ export default function ContactsPage({
   // Función para manejar salto a página
   const handleJumpToPage = () => {
     const pageNumber = parseInt(jumpToPage);
+    console.log('🔍 handleJumpToPage called:', { jumpToPage, pageNumber, totalPages });
+    
     if (pageNumber >= 1 && pageNumber <= totalPages) {
+      console.log('✅ Valid page number, changing to:', pageNumber);
       setCurrentPage(pageNumber);
       setJumpToPage('');
+    } else {
+      console.log('❌ Invalid page number:', pageNumber);
     }
   };
 
-  // Función para manejar tecla Enter en el input
-  const handleJumpKeyPress = (e: React.KeyboardEvent) => {
+  // Función para manejar cambio en el input con debounce
+  const handleJumpInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setJumpToPage(value);
+    
+    // Limpiar timeout anterior si existe
+    if (jumpTimeout) {
+      clearTimeout(jumpTimeout);
+    }
+    
+    // Si el valor está vacío, no hacer nada
+    if (value === '') {
+      return;
+    }
+    
+    const pageNumber = parseInt(value);
+    
+    // Solo saltar si es un número válido
+    if (!isNaN(pageNumber) && pageNumber >= 1 && pageNumber <= totalPages) {
+      // Debounce: esperar 500ms después del último cambio
+      const timeout = setTimeout(() => {
+        console.log('🚀 Auto-jump to page:', pageNumber);
+        setCurrentPage(pageNumber);
+        setJumpToPage(''); // Limpiar el input después del salto
+      }, 500);
+      
+      setJumpTimeout(timeout);
+    }
+  };
+
+  // Función para manejar tecla Enter (mantener como alternativa)
+  const handleJumpKeyDown = (e: React.KeyboardEvent) => {
+    console.log('⌨️ Key pressed:', e.key);
     if (e.key === 'Enter') {
+      console.log('🚀 Enter pressed, calling handleJumpToPage');
+      e.preventDefault();
+      
+      // Limpiar timeout si existe
+      if (jumpTimeout) {
+        clearTimeout(jumpTimeout);
+        setJumpTimeout(null);
+      }
+      
       handleJumpToPage();
     }
   };
@@ -755,8 +810,8 @@ export default function ContactsPage({
                       min="1"
                       max={totalPages}
                       value={jumpToPage}
-                      onChange={(e) => setJumpToPage(e.target.value)}
-                      onKeyPress={handleJumpKeyPress}
+                      onChange={handleJumpInputChange}
+                      onKeyDown={handleJumpKeyDown}
                       placeholder="Núm"
                       className="w-12 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
