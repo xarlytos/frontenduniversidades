@@ -226,12 +226,31 @@ export default function ContactsPage({
         pages.push(i);
       }
     } else {
-      // Lógica para páginas inteligentes - siempre mostrar 1, 2, 3, 4, 5, 6, 7, ..., última
-      for (let i = 1; i <= 7; i++) {
-        pages.push(i);
+      // Lógica para páginas inteligentes contextuales
+      if (currentPage <= 4) {
+        // Página 1-4: 1 2 3 4 5 6 7 ... 230
+        for (let i = 1; i <= 7; i++) {
+          pages.push(i);
+        }
+        pages.push('...');
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 3) {
+        // Página 227-230: 1 ... 224 225 226 227 228 229 230
+        pages.push(1);
+        pages.push('...');
+        for (let i = totalPages - 6; i <= totalPages; i++) {
+          pages.push(i);
+        }
+      } else {
+        // Página central: 1 ... 47 48 49 50 51 52 53 ... 230
+        pages.push(1);
+        pages.push('...');
+        for (let i = currentPage - 3; i <= currentPage + 3; i++) {
+          pages.push(i);
+        }
+        pages.push('...');
+        pages.push(totalPages);
       }
-      pages.push('...');
-      pages.push(totalPages);
     }
     
     return pages;
@@ -742,12 +761,6 @@ export default function ContactsPage({
                       className="w-12 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                     <span className="text-sm text-gray-500">de {totalPages}</span>
-                    <button
-                      onClick={handleJumpToPage}
-                      className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                    >
-                      Ir
-                    </button>
                   </div>
                   
                   {/* Navegación de páginas */}
