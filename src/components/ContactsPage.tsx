@@ -813,7 +813,7 @@ export default function ContactsPage({
                       onChange={handleJumpInputChange}
                       onKeyDown={handleJumpKeyDown}
                       placeholder="Núm"
-                      className="w-12 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-16 px-3 py-2 text-base border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                     <span className="text-sm text-gray-500">de {totalPages}</span>
                   </div>
